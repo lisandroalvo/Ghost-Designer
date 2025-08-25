@@ -1,0 +1,9 @@
+{
+  "name": "Design System Generator",
+  "id": "com.figma.ds-generator",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma", "figjam"],
+  "permissions": ["currentuser", "activeusers"]
+}
