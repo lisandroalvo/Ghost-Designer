@@ -1,0 +1,13 @@
+{
+  "name": "Ghost Designer MVP",
+  "id": "ghost-designer-mvp",
+  "api": "1.0.0",
+  "editorType": ["figma"],
+  "main": "code-simple.js",
+  "ui": "ui/index-simple-ai.html",
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Plugin needs network access for AI critique functionality"
+  }
+}
+

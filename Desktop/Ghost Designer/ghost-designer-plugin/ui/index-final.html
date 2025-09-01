@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ghost Designer</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 16px; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: white;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0066FF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px 4px 4px 0;
+            font-size: 12px;
+        }
+        button:hover { background: #0052CC; }
+        button.secondary { background: #6B7280; }
+        button.secondary:hover { background: #4B5563; }
+        
+        #results {
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .component {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+        }
+        .component-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .issue {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid;
+        }
+        .issue.error {
+            background: #fee;
+            border-color: #f44;
+            color: #900;
+        }
+        .issue.warning {
+            background: #ffe;
+            border-color: #fa0;
+            color: #940;
+        }
+        .issue.info {
+            background: #eef;
+            border-color: #38f;
+            color: #14a;
+        }
+        .issue.layout {
+            background: #efe;
+            border-color: #1b9;
+            color: #065;
+        }
+        .no-issues {
+            color: #059;
+            font-weight: bold;
+            padding: 8px;
+        }
+        .stats {
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #666;
+        }
+        .fix-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .fix-btn:hover { background: #059669; }
+        .fix-btn:disabled { 
+            background: #999; 
+            cursor: not-allowed; 
+        }
+        .fix-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .fix-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .fix-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        #ai-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h2>Ghost Designer</h2>
+    <p>Select components and analyze for design issues</p>
+    
+    <button onclick="analyzeComponents()">Analyze Selection</button>
+    <button onclick="askAI()" id="ai-btn" disabled>Ask AI (Mentor Mode)</button>
+    <button onclick="showSettings()" class="secondary">Settings</button>
+    <button onclick="testPlugin()">Test</button>
+    <button class="secondary" onclick="closePlugin()">Close</button>
+    
+    <div id="results"></div>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 400px;">
+            <h3>AI Settings</h3>
+            <label style="display: block; margin-bottom: 10px;">
+                <span>API Key:</span>
+                <input type="password" id="api-key" placeholder="sk-..." style="width: 100%; margin-top: 4px; font-family: monospace;">
+            </label>
+            <label style="display: block; margin-bottom: 10px;">
+                <span>Model:</span>
+                <input type="text" id="model" value="gpt-4o-mini" style="width: 100%; margin-top: 4px;">
+            </label>
+            <label style="display: block; margin-bottom: 10px;">
+                <span>Base URL:</span>
+                <input type="text" id="base-url" value="https://api.openai.com/v1" style="width: 100%; margin-top: 4px;">
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <button onclick="saveSettings()">Save</button>
+                <button onclick="hideSettings()" class="secondary">Cancel</button>
+                <button onclick="clearSettings()" class="secondary">Clear</button>
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                Your API key is stored locally in your browser only.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function analyzeComponents() {
+            document.getElementById('results').innerHTML = '<div class="stats">Analyzing components...</div>';
+            parent.postMessage({ pluginMessage: { type: 'analyze' } }, '*');
+        }
+        
+        function testPlugin() {
+            document.getElementById('results').innerHTML = '<div class="stats">Testing plugin...</div>';
+            parent.postMessage({ pluginMessage: { type: 'test' } }, '*');
+        }
+        
+        function closePlugin() {
+            parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        }
+        
+        // AI Settings Management
+        var aiSettings = {
+            apiKey: localStorage.getItem('ghost-ai-key') || '',
+            model: localStorage.getItem('ghost-ai-model') || 'gpt-4o-mini',
+            baseUrl: localStorage.getItem('ghost-ai-baseurl') || 'https://api.openai.com/v1'
+        };
+        
+        function updateAIButton() {
+            var btn = document.getElementById('ai-btn');
+            btn.disabled = !aiSettings.apiKey;
+        }
+        
+        function showSettings() {
+            document.getElementById('api-key').value = aiSettings.apiKey;
+            document.getElementById('model').value = aiSettings.model;
+            document.getElementById('base-url').value = aiSettings.baseUrl;
+            document.getElementById('settings-modal').style.display = 'block';
+        }
+        
+        function hideSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+        
+        function saveSettings() {
+            aiSettings.apiKey = document.getElementById('api-key').value;
+            aiSettings.model = document.getElementById('model').value;
+            aiSettings.baseUrl = document.getElementById('base-url').value;
+            
+            localStorage.setItem('ghost-ai-key', aiSettings.apiKey);
+            localStorage.setItem('ghost-ai-model', aiSettings.model);
+            localStorage.setItem('ghost-ai-baseurl', aiSettings.baseUrl);
+            
+            updateAIButton();
+            hideSettings();
+        }
+        
+        function clearSettings() {
+            localStorage.removeItem('ghost-ai-key');
+            localStorage.removeItem('ghost-ai-model');
+            localStorage.removeItem('ghost-ai-baseurl');
+            aiSettings.apiKey = '';
+            aiSettings.model = 'gpt-4o-mini';
+            aiSettings.baseUrl = 'https://api.openai.com/v1';
+            updateAIButton();
+            hideSettings();
+        }
+        
+        var currentAnalysisData = null;
+        
+        function askAI() {
+            if (!aiSettings.apiKey || !currentAnalysisData) return;
+            
+            var btn = document.getElementById('ai-btn');
+            btn.innerHTML = 'Thinking...';
+            btn.disabled = true;
+            
+            callOpenAI(currentAnalysisData).then(function(suggestions) {
+                displayAISuggestions(suggestions);
+                btn.innerHTML = 'Ask AI (Mentor Mode)';
+                btn.disabled = false;
+            }).catch(function(error) {
+                console.error('AI error:', error);
+                btn.innerHTML = 'Ask AI (Mentor Mode)';
+                btn.disabled = false;
+            });
+        }
+        
+        function callOpenAI(analysisData) {
+            var compactData = {
+                frameName: 'Selected Components',
+                totalComponents: analysisData.totalComponents,
+                issues: analysisData.components.map(function(c) {
+                    return {
+                        name: c.name,
+                        type: c.type,
+                        issueCount: c.issues.length,
+                        severities: c.issues.map(function(i) { return i.severity; })
+                    };
+                })
+            };
+            
+            var prompt = 'Analyze this Figma design and provide 2-3 high-level design suggestions. Focus on hierarchy, clarity, and user experience. Return only a JSON array with objects containing: issue, why, confidence (0-1). Data: ' + JSON.stringify(compactData);
+            
+            return fetch(aiSettings.baseUrl + '/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + aiSettings.apiKey
+                },
+                body: JSON.stringify({
+                    model: aiSettings.model,
+                    temperature: 0.2,
+                    max_tokens: 500,
+                    messages: [
+                        { role: 'system', content: 'You are a senior product designer. Be concise and specific. Return only JSON.' },
+                        { role: 'user', content: prompt }
+                    ]
+                })
+            }).then(function(res) {
+                if (!res.ok) throw new Error('API request failed');
+                return res.json();
+            }).then(function(data) {
+                var content = data.choices[0].message.content;
+                try {
+                    return JSON.parse(content);
+                } catch (e) {
+                    var match = content.match(/\[[\s\S]*\]/);
+                    if (match) return JSON.parse(match[0]);
+                    return [];
+                }
+            });
+        }
+        
+        function displayAISuggestions(suggestions) {
+            if (!suggestions || suggestions.length === 0) return;
+            
+            var html = '<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 16px;">';
+            html += '<h4 style="margin: 0 0 8px 0; color: #059669;">AI Suggestions</h4>';
+            
+            for (var i = 0; i < suggestions.length; i++) {
+                var s = suggestions[i];
+                var confidence = Math.round((s.confidence || 0.7) * 100);
+                html += '<div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 4px; padding: 8px; margin-bottom: 8px;">';
+                html += '<strong>' + s.issue + '</strong> (' + confidence + '% confidence)';
+                if (s.why) html += '<br><em>' + s.why + '</em>';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            document.getElementById('results').innerHTML += html;
+        }
+        
+        // Initialize AI button state
+        updateAIButton();
+        
+        function applyFix(button) {
+            var fixId = button.getAttribute('data-fix-id');
+            var nodeId = button.getAttribute('data-node-id');
+            var fixAction = button.getAttribute('data-fix-action');
+            var fixValueStr = button.getAttribute('data-fix-value');
+            
+            var fixValue;
+            try {
+                fixValue = JSON.parse(fixValueStr);
+            } catch (e) {
+                return;
+            }
+            
+            button.innerHTML = 'Fixing...';
+            button.disabled = true;
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply-fix', 
+                    fixData: { nodeId: nodeId, fixAction: fixAction, fixValue: fixValue }
+                } 
+            }, '*');
+        }
+        
+        function displayAnalysis(data) {
+            var resultsDiv = document.getElementById('results');
+            
+            if (data.error) {
+                resultsDiv.innerHTML = '<div class="stats" style="color: #f44;">' + data.error + '</div>';
+                return;
+            }
+            
+            // Store analysis data for AI
+            currentAnalysisData = data;
+            
+            var html = '<div class="stats">Analyzed ' + data.totalComponents + ' component(s)</div>';
+            
+            for (var i = 0; i < data.components.length; i++) {
+                var component = data.components[i];
+                var issueCount = component.issues.length;
+                var issueText = '';
+                
+                if (issueCount === 0) {
+                    issueText = '<div class="no-issues">No issues found</div>';
+                } else {
+                    for (var j = 0; j < component.issues.length; j++) {
+                        var issue = component.issues[j];
+                        var fixButton = '';
+                        
+                        if (issue.fixAction) {
+                            fixButton = '<br><button class="fix-btn" ' +
+                                'data-fix-id="' + issue.fixId + '" ' +
+                                'data-node-id="' + issue.nodeId + '" ' +
+                                'data-fix-action="' + issue.fixAction + '" ' +
+                                'data-fix-value=\'' + JSON.stringify(issue.fixValue) + '\' ' +
+                                'onclick="applyFix(this)">Fix It</button>';
+                        }
+                        
+                        issueText += '<div class="issue ' + issue.severity + '">' +
+                            '<strong>' + issue.type.toUpperCase() + ':</strong> ' + issue.message +
+                            '<br><em>' + issue.suggestion + '</em>' +
+                            fixButton +
+                            '</div>';
+                    }
+                }
+                
+                html += '<div class="component">' +
+                    '<div class="component-header">' +
+                    component.name + ' (' + component.type + ')' +
+                    '<span style="font-size: 11px; color: #666; margin-left: 8px;">' +
+                    Math.round(component.bounds.width) + 'x' + Math.round(component.bounds.height) + 'px' +
+                    '</span>' +
+                    '</div>' +
+                    issueText +
+                    '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        window.onmessage = function(event) {
+            var msg = event.data.pluginMessage;
+            
+            if (msg && msg.type === 'analysis-result') {
+                displayAnalysis(msg.data);
+            }
+            
+            if (msg && msg.type === 'test-response') {
+                document.getElementById('results').innerHTML = 
+                    '<div class="stats" style="color: #059;">' + msg.data + '</div>';
+            }
+            
+            if (msg && msg.type === 'fix-result') {
+                var fixBtns = document.querySelectorAll('.fix-btn');
+                for (var i = 0; i < fixBtns.length; i++) {
+                    var btn = fixBtns[i];
+                    if (btn.innerHTML === 'Fixing...') {
+                        btn.innerHTML = 'Fix It';
+                        btn.disabled = false;
+                    }
+                }
+                
+                var statusDiv = document.createElement('div');
+                statusDiv.className = 'fix-status ' + (msg.success ? 'success' : 'error');
+                statusDiv.innerHTML = msg.success ? 'Success: ' + msg.message : 'Error: ' + msg.message;
+                
+                var resultsDiv = document.getElementById('results');
+                resultsDiv.appendChild(statusDiv);
+                
+                setTimeout(function() {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 3000);
+                
+                if (msg.success) {
+                    setTimeout(function() {
+                        analyzeComponents();
+                    }, 500);
+                }
+            }
+        };
+    </script>
+</body>
+</html>

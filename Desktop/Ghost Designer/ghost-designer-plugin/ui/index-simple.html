@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ghost Designer</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 16px; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: #ffffff;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0066FF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px 4px 4px 0;
+            font-size: 12px;
+        }
+        button:hover {
+            background: #0052CC;
+        }
+        button.secondary {
+            background: #6B7280;
+        }
+        button.secondary:hover {
+            background: #4B5563;
+        }
+        #results {
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .component {
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #F9FAFB;
+        }
+        .component-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        .issue {
+            padding: 6px 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .issue.error {
+            background: #FEF2F2;
+            border-left: 3px solid #EF4444;
+            color: #991B1B;
+        }
+        .issue.warning {
+            background: #FFFBEB;
+            border-left: 3px solid #F59E0B;
+            color: #92400E;
+        }
+        .issue.info {
+            background: #EFF6FF;
+            border-left: 3px solid #3B82F6;
+            color: #1E40AF;
+        }
+        .issue.layout {
+            background: #F0F9FF;
+            border-left: 3px solid #0EA5E9;
+            color: #0C4A6E;
+        }
+        .no-issues {
+            color: #059669;
+            font-weight: 500;
+        }
+        .stats {
+            background: #F3F4F6;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #6B7280;
+        }
+        .fix-btn {
+            background: #10B981;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .fix-btn:hover {
+            background: #059669;
+        }
+        .fix-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .fix-status.success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .fix-status.error {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+    </style>
+</head>
+<body>
+    <h2>🎨 Ghost Designer</h2>
+    <p>Select components and analyze for design issues</p>
+    
+    <button onclick="analyzeComponents()">🔍 Analyze Selection</button>
+    <button onclick="testPlugin()">🧪 Test</button>
+    <button class="secondary" onclick="closePlugin()">Close</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function analyzeComponents() {
+            document.getElementById('results').innerHTML = '<div class="stats">Analyzing components...</div>';
+            parent.postMessage({ pluginMessage: { type: 'analyze' } }, '*');
+        }
+        
+        function testPlugin() {
+            document.getElementById('results').innerHTML = '<div class="stats">Testing plugin...</div>';
+            parent.postMessage({ pluginMessage: { type: 'test' } }, '*');
+        }
+        
+        function closePlugin() {
+            parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        }
+        
+        function applyFixFromButton(button) {
+            console.log('applyFixFromButton called');
+            
+            const fixId = button.getAttribute('data-fix-id');
+            const nodeId = button.getAttribute('data-node-id');
+            const fixAction = button.getAttribute('data-fix-action');
+            const fixValueStr = button.getAttribute('data-fix-value');
+            
+            console.log('Fix data:', { fixId, nodeId, fixAction, fixValueStr });
+            
+            let fixValue;
+            try {
+                fixValue = JSON.parse(fixValueStr);
+            } catch (e) {
+                console.error('Failed to parse fixValue:', e);
+                return;
+            }
+            
+            // Show loading state
+            button.innerHTML = '⏳ Fixing...';
+            button.disabled = true;
+            
+            console.log('Sending fix message:', { nodeId, fixAction, fixValue });
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply-fix', 
+                    fixData: { nodeId, fixAction, fixValue }
+                } 
+            }, '*');
+        }
+        
+        function displayAnalysis(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.error) {
+                resultsDiv.innerHTML = `<div class="stats" style="color: #EF4444;">${data.error}</div>`;
+                return;
+            }
+            
+            let html = `<div class="stats">Analyzed ${data.totalComponents} component(s)</div>`;
+            
+            data.components.forEach(component => {
+                const issueCount = component.issues.length;
+                const issueText = issueCount === 0 ? 
+                    '<div class="no-issues">✅ No issues found</div>' :
+                    component.issues.map(issue => 
+                        `<div class="issue ${issue.severity}">
+                            <strong>${issue.type.toUpperCase()}:</strong> ${issue.message}
+                            <br><em>💡 ${issue.suggestion}</em>
+                            ${issue.fixAction ? `<br><button class="fix-btn" data-fix-id="${issue.fixId}" data-node-id="${issue.nodeId}" data-fix-action="${issue.fixAction}" data-fix-value='${JSON.stringify(issue.fixValue)}' onclick="applyFixFromButton(this)">🔧 Fix It</button>` : ''}
+                        </div>`
+                    ).join('');
+                
+                html += `
+                    <div class="component">
+                        <div class="component-header">
+                            ${component.name} (${component.type})
+                            <span style="font-size: 11px; color: #6B7280;">
+                                ${Math.round(component.bounds.width)}×${Math.round(component.bounds.height)}px
+                            </span>
+                        </div>
+                        ${issueText}
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        window.onmessage = (event) => {
+            const msg = event.data.pluginMessage;
+            
+            if (msg && msg.type === 'analysis-result') {
+                displayAnalysis(msg.data);
+            }
+            
+            if (msg && msg.type === 'test-response') {
+                document.getElementById('results').innerHTML = 
+                    `<div class="stats" style="color: #059669;">${msg.data}</div>`;
+            }
+            
+            if (msg && msg.type === 'fix-result') {
+                // Find all fix buttons and reset them
+                const fixBtns = document.querySelectorAll('.fix-btn');
+                fixBtns.forEach(btn => {
+                    if (btn.innerHTML === '⏳ Fixing...') {
+                        btn.innerHTML = '🔧 Fix It';
+                        btn.disabled = false;
+                    }
+                });
+                
+                // Show fix result
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `fix-status ${msg.success ? 'success' : 'error'}`;
+                statusDiv.innerHTML = msg.success ? `✅ ${msg.message}` : `❌ ${msg.message}`;
+                
+                // Add status after the results
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.appendChild(statusDiv);
+                
+                // Remove status after 3 seconds
+                setTimeout(() => {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 3000);
+                
+                // If fix was successful, re-analyze to update the display
+                if (msg.success) {
+                    setTimeout(() => {
+                        analyzeComponents();
+                    }, 500);
+                }
+            }
+        };
+    </script>
+</body>
+</html>

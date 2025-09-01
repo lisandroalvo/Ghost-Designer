@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ghost Designer</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 16px; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: white;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0066FF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px 4px 4px 0;
+            font-size: 12px;
+        }
+        button:hover { background: #0052CC; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        button.secondary { background: #6B7280; }
+        button.secondary:hover { background: #4B5563; }
+        
+        #results {
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .component {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+        }
+        .component-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .issue {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid;
+        }
+        .issue.error {
+            background: #fee;
+            border-color: #f44;
+            color: #900;
+        }
+        .issue.warning {
+            background: #ffe;
+            border-color: #fa0;
+            color: #940;
+        }
+        .issue.info {
+            background: #eef;
+            border-color: #38f;
+            color: #14a;
+        }
+        .issue.layout {
+            background: #efe;
+            border-color: #1b9;
+            color: #065;
+        }
+        .no-issues {
+            color: #059;
+            font-weight: bold;
+            padding: 8px;
+        }
+        .stats {
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #666;
+        }
+        .fix-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .fix-btn:hover { background: #059669; }
+        .fix-btn:disabled { 
+            background: #999; 
+            cursor: not-allowed; 
+        }
+        .fix-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .fix-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .fix-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal-content {
+            position: relative;
+            margin: 20px auto;
+            max-width: 350px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 350px;
+            max-width: 90%;
+        }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .modal label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        .modal label span {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #374151;
+        }
+        .modal button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            margin-right: 8px;
+            font-size: 13px;
+        }
+        .modal button.secondary {
+            background: #6b7280;
+        }
+        .modal h3 {
+            margin: 0 0 16px 0;
+            color: #1f2937;
+        }
+        .ai-suggestions {
+            margin-top: 16px;
+            border-top: 1px solid #ddd;
+            padding-top: 16px;
+        }
+        .ai-suggestion {
+            background: #f0fdf4;
+            border: 1px solid #10b981;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Ghost Designer</h2>
+    <p>Select components and analyze for design issues</p>
+    
+    <button onclick="analyzeComponents()">Analyze Selection</button>
+    <button onclick="askAI()" id="ai-btn" disabled>Ask AI (Mentor Mode)</button>
+    <button onclick="openSettings()" class="secondary">Settings</button>
+    <button onclick="testPlugin()">Test</button>
+    <button class="secondary" onclick="closePlugin()">Close</button>
+    
+    <div id="results"></div>
+    
+    <!-- Inline Settings -->
+    <div id="settings-panel" style="display: none; background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px;">AI Settings</h3>
+        
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Provider:</label>
+            <select id="provider-select" onchange="updateProvider()" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="lmstudio">LM Studio (Local, Free)</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">API Key:</label>
+            <input type="password" id="api-key" placeholder="sk-..." style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; margin-bottom: 4px;">Model:</label>
+            <select id="model-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="saveInlineSettings()" style="padding: 6px 12px; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 12px;">Save</button>
+            <button onclick="testInlineApiKey()" style="padding: 6px 12px; background: #059669; color: white; border: none; border-radius: 4px; font-size: 12px;">Test</button>
+            <button onclick="showCurlCommand()" style="padding: 6px 12px; background: #f59e0b; color: white; border: none; border-radius: 4px; font-size: 12px;">Show cURL</button>
+            <button onclick="hideSettings()" style="padding: 6px 12px; background: #6b7280; color: white; border: none; border-radius: 4px; font-size: 12px;">Hide</button>
+        </div>
+        
+        <div style="margin-top: 12px; padding: 8px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; font-size: 11px;">
+            <strong>⚠️ OpenRouter Key Issues:</strong><br>
+            • Check your key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a><br>
+            • Verify account has credits at <a href="https://openrouter.ai/credits" target="_blank">openrouter.ai/credits</a><br>
+            • Key format should be: sk-or-v1-...<br>
+            • Try the cURL command in terminal to test outside Figma
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        var currentAnalysisData = null;
+        var aiSettings = {
+            apiKey: '',
+            model: 'gpt-4o-mini',
+            baseUrl: 'https://api.openai.com/v1'
+        };
+        
+        // Load settings on startup - request from main thread
+        window.addEventListener('load', function() {
+            // Request settings from main thread (Figma plugin storage)
+            parent.postMessage({ pluginMessage: { type: 'load-settings' } }, '*');
+        });
+        
+        // Listen for messages from main thread
+        window.addEventListener('message', function(event) {
+            if (event.data.pluginMessage) {
+                var msg = event.data.pluginMessage;
+                
+                if (msg.type === 'analysis-complete') {
+                    currentAnalysisData = msg.data;
+                    displayAnalysisResults(msg.data);
+                    updateAIButton();
+                }
+                
+                if (msg.type === 'settings-loaded') {
+                    aiSettings.apiKey = msg.apiKey || '';
+                    aiSettings.model = msg.model || 'gpt-4o-mini';
+                    aiSettings.baseUrl = msg.baseUrl || 'https://api.openai.com/v1';
+                    
+                    if (aiSettings.apiKey) {
+                        showDebugInfo('🔑 API key loaded: ' + aiSettings.apiKey.substring(0, 10) + '...', 'success');
+                    } else {
+                        showDebugInfo('⚠️ No API key found in storage', 'info');
+                    }
+                    updateAIButton();
+                }
+            }
+        });
+
+        function updateAIButton() {
+            var btn = document.getElementById('ai-btn');
+            if (btn) {
+                btn.disabled = !aiSettings.apiKey;
+                
+                // Show current status
+                if (aiSettings.apiKey) {
+                    showDebugInfo('✅ API key detected, AI button enabled', 'success');
+                } else {
+                    showDebugInfo('⚠️ No API key found, please configure in Settings', 'info');
+                }
+            }
+        }
+        
+        function openSettings() {
+            var panel = document.getElementById('settings-panel');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                document.getElementById('api-key').value = aiSettings.apiKey;
+                document.getElementById('model-select').value = aiSettings.model;
+                
+                // Set provider based on current base URL
+                if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                    document.getElementById('provider-select').value = 'openrouter';
+                    updateProvider();
+                } else if (aiSettings.baseUrl.includes('127.0.0.1:1234')) {
+                    document.getElementById('provider-select').value = 'lmstudio';
+                    updateProvider();
+                } else {
+                    document.getElementById('provider-select').value = 'openai';
+                    updateProvider();
+                }
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+        
+        function hideSettings() {
+            document.getElementById('settings-panel').style.display = 'none';
+        }
+        
+        function updateProvider() {
+            var provider = document.getElementById('provider-select').value;
+            var modelSelect = document.getElementById('model-select');
+            
+            // Clear existing options
+            modelSelect.innerHTML = '';
+            
+            if (provider === 'openrouter') {
+                aiSettings.baseUrl = 'https://openrouter.ai/api/v1';
+                modelSelect.innerHTML = `
+                    <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                    <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="meta-llama/llama-3.1-8b-instruct">Llama 3.1 8B</option>
+                `;
+                document.getElementById('api-key').disabled = false;
+                document.getElementById('api-key').placeholder = 'sk-or-...';
+            } else if (provider === 'lmstudio') {
+                aiSettings.baseUrl = 'http://127.0.0.1:1234/v1';
+                modelSelect.innerHTML = `
+                    <option value="meta-llama/Meta-Llama-3.1-8B-Instruct">Meta-Llama-3.1-8B-Instruct</option>
+                `;
+                document.getElementById('api-key').value = '';
+                document.getElementById('api-key').disabled = true;
+                document.getElementById('api-key').placeholder = 'Not required for local LM Studio';
+            } else {
+                aiSettings.baseUrl = 'https://api.openai.com/v1';
+                modelSelect.innerHTML = `
+                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    <option value="gpt-4">GPT-4</option>
+                `;
+                document.getElementById('api-key').disabled = false;
+                document.getElementById('api-key').placeholder = 'sk-...';
+            }
+        }
+        
+        function saveInlineSettings() {
+            var apiKey = document.getElementById('api-key').value.trim();
+            var model = document.getElementById('model-select').value;
+            
+            var provider = document.getElementById('provider-select').value;
+            if (!apiKey && provider !== 'lmstudio') {
+                showDebugInfo('❌ Please enter an API key', 'error');
+                return;
+            }
+            
+            aiSettings.apiKey = apiKey;
+            aiSettings.model = model;
+            
+            // Save to Figma storage
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'save-settings',
+                    apiKey: apiKey,
+                    model: model,
+                    baseUrl: aiSettings.baseUrl
+                } 
+            }, '*');
+            
+            updateAIButton();
+            showDebugInfo('✅ Settings saved successfully', 'success');
+        }
+        
+        function testInlineApiKey() {
+            var provider = document.getElementById('provider-select').value;
+            var apiKey = document.getElementById('api-key').value.trim();
+            
+            if (!apiKey && provider !== 'lmstudio') {
+                showDebugInfo('❌ Please enter an API key first', 'error');
+                return;
+            }
+            
+            showDebugInfo('🧪 Testing connection...', 'info');
+            
+            var testHeaders = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Only add Authorization for providers that need API keys
+            if (provider !== 'lmstudio' && apiKey) {
+                testHeaders['Authorization'] = 'Bearer ' + apiKey;
+            }
+            
+            if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                testHeaders['HTTP-Referer'] = 'https://figma.com';
+                testHeaders['X-Title'] = 'Ghost Designer Figma Plugin';
+                testHeaders['Origin'] = 'https://figma.com';
+            }
+            
+            var testModel;
+            if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                testModel = 'openai/gpt-3.5-turbo';
+            } else if (aiSettings.baseUrl.includes('127.0.0.1:1234')) {
+                testModel = 'meta-llama/Meta-Llama-3.1-8B-Instruct';
+            } else {
+                testModel = 'gpt-3.5-turbo';
+            }
+            var testBody = {
+                model: testModel,
+                messages: [{ role: 'user', content: 'Hello' }],
+                max_tokens: 5
+            };
+            
+            fetch(aiSettings.baseUrl + '/chat/completions', {
+                method: 'POST',
+                headers: testHeaders,
+                body: JSON.stringify(testBody)
+            }).then(function(res) {
+                if (res.ok) {
+                    showDebugInfo('✅ API key is valid!', 'success');
+                } else {
+                    return res.text().then(function(text) {
+                        showDebugInfo('❌ API key test failed: ' + text.substring(0, 200), 'error');
+                    });
+                }
+            }).catch(function(error) {
+                showDebugInfo('❌ Network error: ' + error.message, 'error');
+            });
+        }
+        
+        function showCurlCommand() {
+            var apiKey = document.getElementById('api-key').value.trim();
+            
+            if (!apiKey) {
+                showDebugInfo('❌ Please enter an API key first', 'error');
+                return;
+            }
+            
+            var curlCmd = 'curl -X POST "' + aiSettings.baseUrl + '/chat/completions" \\\n';
+            curlCmd += '  -H "Content-Type: application/json" \\\n';
+            curlCmd += '  -H "Authorization: Bearer ' + apiKey + '" \\\n';
+            
+            if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                curlCmd += '  -H "HTTP-Referer: https://figma.com" \\\n';
+                curlCmd += '  -H "X-Title: Ghost Designer Figma Plugin" \\\n';
+            }
+            
+            var testModel = aiSettings.baseUrl.includes('openrouter.ai') ? 'openai/gpt-3.5-turbo' : 'gpt-3.5-turbo';
+            curlCmd += '  -d \'{"model":"' + testModel + '","messages":[{"role":"user","content":"Hello"}],"max_tokens":5}\'';
+            
+            // Create a text area to show the curl command
+            var existingTextarea = document.getElementById('curl-output');
+            if (existingTextarea) {
+                existingTextarea.remove();
+            }
+            
+            var textarea = document.createElement('textarea');
+            textarea.id = 'curl-output';
+            textarea.value = curlCmd;
+            textarea.style.width = '100%';
+            textarea.style.height = '120px';
+            textarea.style.marginTop = '8px';
+            textarea.style.fontSize = '11px';
+            textarea.style.fontFamily = 'monospace';
+            textarea.style.border = '1px solid #ddd';
+            textarea.style.borderRadius = '4px';
+            textarea.style.padding = '8px';
+            textarea.readOnly = true;
+            
+            document.getElementById('settings-panel').appendChild(textarea);
+            
+            showDebugInfo('📋 cURL command generated - test this in terminal to verify your key works', 'info');
+        }
+        
+        function closeSettings() {
+            hideSettings();
+            
+            // Add real-time detection when API key is entered (both typing and pasting)
+            var apiKeyField = document.getElementById('api-key');
+            
+            function detectAndUpdateUrl() {
+                var apiKey = apiKeyField.value.trim();
+                var baseUrlField = document.getElementById('base-url');
+                
+                showDebugInfo('🔍 Checking API key: ' + apiKey.substring(0, 10) + '...', 'info');
+                
+                if (apiKey.startsWith('sk-or-')) {
+                    baseUrlField.value = 'https://openrouter.ai/api/v1';
+                    showDebugInfo('🔄 OpenRouter key detected, base URL updated to OpenRouter', 'success');
+                } else if (apiKey.startsWith('sk-')) {
+                    baseUrlField.value = 'https://api.openai.com/v1';
+                    showDebugInfo('🔄 OpenAI key detected, base URL updated to OpenAI', 'success');
+                } else if (apiKey.length > 0) {
+                    showDebugInfo('⚠️ Unknown API key format: ' + apiKey.substring(0, 10) + '...', 'info');
+                }
+            }
+            
+            // Remove any existing listeners to prevent duplicates
+            var newApiKeyField = apiKeyField.cloneNode(true);
+            apiKeyField.parentNode.replaceChild(newApiKeyField, apiKeyField);
+            
+            // Listen for multiple events to catch all input methods
+            newApiKeyField.addEventListener('input', detectAndUpdateUrl);
+            newApiKeyField.addEventListener('paste', function() {
+                setTimeout(detectAndUpdateUrl, 50);
+            });
+            newApiKeyField.addEventListener('change', detectAndUpdateUrl);
+            newApiKeyField.addEventListener('keyup', detectAndUpdateUrl);
+        }
+        
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+        
+        function saveSettings() {
+            var apiKey = document.getElementById('api-key').value.trim();
+            var model = document.getElementById('model').value.trim();
+            var baseUrl = document.getElementById('base-url').value.trim();
+            
+            // Validate API key format - allow more flexibility for different providers
+            if (apiKey && apiKey.length < 20) {
+                alert('API key seems too short. Please check you copied the full key.');
+                return;
+            }
+            
+            // Force update base URL for OpenRouter keys
+            if (apiKey && apiKey.startsWith('sk-or-')) {
+                baseUrl = 'https://openrouter.ai/api/v1';
+                document.getElementById('base-url').value = baseUrl;
+                showDebugInfo('🔄 OpenRouter key detected, base URL set to OpenRouter', 'success');
+            }
+            
+            aiSettings.apiKey = apiKey;
+            aiSettings.model = model;
+            aiSettings.baseUrl = baseUrl;
+            
+            // Save to Figma plugin storage instead of localStorage
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'save-settings',
+                    apiKey: apiKey,
+                    model: model,
+                    baseUrl: baseUrl
+                } 
+            }, '*');
+            
+            updateAIButton();
+            closeSettings();
+            
+            if (apiKey) {
+                showDebugInfo('✅ API key saved: ' + apiKey.substring(0, 10) + '...', 'success');
+            }
+        }
+        
+        function testApiKey() {
+            var apiKey = document.getElementById('api-key').value.trim();
+            var baseUrl = document.getElementById('base-url').value.trim();
+            
+            if (!apiKey) {
+                showDebugInfo('❌ Please enter an API key first', 'error');
+                return;
+            }
+            
+            showDebugInfo('🧪 Testing API key...', 'info');
+            
+            var testHeaders = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            };
+            
+            if (baseUrl.includes('openrouter.ai')) {
+                testHeaders['HTTP-Referer'] = 'https://ghost-designer.app';
+                testHeaders['X-Title'] = 'Ghost Designer';
+            }
+            
+            var testBody = {
+                model: baseUrl.includes('openrouter.ai') ? 'openai/gpt-3.5-turbo' : 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: 'Hello' }],
+                max_tokens: 5
+            };
+            
+            fetch(baseUrl + '/chat/completions', {
+                method: 'POST',
+                headers: testHeaders,
+                body: JSON.stringify(testBody)
+            }).then(function(res) {
+                if (res.ok) {
+                    showDebugInfo('✅ API key is valid!', 'success');
+                } else {
+                    return res.text().then(function(text) {
+                        showDebugInfo('❌ API key test failed: ' + text, 'error');
+                    });
+                }
+            }).catch(function(error) {
+                showDebugInfo('❌ Network error: ' + error.message, 'error');
+            });
+        }
+        
+        function clearSettings() {
+            parent.postMessage({ pluginMessage: { type: 'save-settings', apiKey: '', model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1' } }, '*');
+            
+            aiSettings.apiKey = '';
+            aiSettings.model = 'gpt-4o-mini';
+            aiSettings.baseUrl = 'https://api.openai.com/v1';
+            
+            document.getElementById('api-key').value = '';
+            document.getElementById('model').value = 'gpt-4o-mini';
+            document.getElementById('base-url').value = 'https://api.openai.com/v1';
+            
+            updateAIButton();
+            showDebugInfo('🗑️ Settings cleared', 'info');
+        }
+        
+        function analyzeComponents() {
+            document.getElementById('results').innerHTML = '<div class="stats">Analyzing components...</div>';
+            parent.postMessage({ pluginMessage: { type: 'analyze' } }, '*');
+        }
+        
+        function testPlugin() {
+            document.getElementById('results').innerHTML = '<div class="stats">Testing plugin...</div>';
+            parent.postMessage({ pluginMessage: { type: 'test' } }, '*');
+        }
+        
+        function closePlugin() {
+            parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        }
+        
+        function showDebugInfo(message, type) {
+            var debugDiv = document.createElement('div');
+            debugDiv.className = 'fix-status ' + (type || 'info');
+            debugDiv.innerHTML = message;
+            debugDiv.style.fontSize = '11px';
+            debugDiv.style.marginTop = '4px';
+            document.getElementById('results').appendChild(debugDiv);
+            
+            // Auto-remove after 5 seconds unless it's an error
+            if (type !== 'error') {
+                setTimeout(function() {
+                    if (debugDiv.parentNode) {
+                        debugDiv.parentNode.removeChild(debugDiv);
+                    }
+                }, 5000);
+            }
+        }
+        
+        function askAI() {
+            if (!aiSettings.apiKey) {
+                showDebugInfo('❌ No API key found. Please go to Settings and save your API key.', 'error');
+                return;
+            }
+            
+            if (!currentAnalysisData) {
+                showDebugInfo('❌ Please run "Analyze Selection" first to generate design data.', 'error');
+                return;
+            }
+            
+            showDebugInfo('🤖 Starting AI request...', 'info');
+            
+            var btn = document.getElementById('ai-btn');
+            btn.innerHTML = 'Thinking...';
+            btn.disabled = true;
+            
+            callOpenAI(currentAnalysisData)
+                .then(function(suggestions) {
+                    showDebugInfo('✅ AI response received: ' + suggestions.length + ' suggestions', 'success');
+                    displayAISuggestions(suggestions);
+                })
+                .catch(function(error) {
+                    showDebugInfo('❌ AI request failed: ' + error.message, 'error');
+                })
+                .finally(function() {
+                    btn.innerHTML = 'Ask AI (Mentor Mode)';
+                    btn.disabled = !aiSettings.apiKey;
+                });
+        }
+        
+        function callOpenAI(analysisData) {
+            var compactData = {
+                totalComponents: analysisData.totalComponents,
+                issues: []
+            };
+            
+            for (var i = 0; i < analysisData.components.length; i++) {
+                var c = analysisData.components[i];
+                compactData.issues.push({
+                    name: c.name,
+                    type: c.type,
+                    issueCount: c.issues.length
+                });
+            }
+            
+            showDebugInfo('📤 Sending request to: ' + aiSettings.model, 'info');
+            
+            var prompt = `Analyze the given Figma component according to UX principles:
+- Nielsen's 10 Heuristics (Visibility, Feedback, Consistency…)
+- Fitts's Law (Size/Distance of clickable targets)
+- Hick's Law (Decision complexity)
+- Color Contrast (WCAG 2.1 AA)
+- Spacing & Alignment (8px grid)
+
+For each detected issue:
+1) Name the violated principle/law
+2) Explain why it's a problem (briefly)
+3) Propose a fix with exact parameters (e.g., "Increase button padding to 16px", "Set text color to #000000 for 4.5:1 contrast")
+4) Provide a JSON array with { issue, principle, target_id, fix:{ property, new_value }, confidence }
+
+Do not return prose, only JSON.
+
+Data: ` + JSON.stringify(compactData);
+            
+            var requestBody = {
+                model: aiSettings.model,
+                temperature: 0.2,
+                max_tokens: 500,
+                messages: [
+                    { role: 'system', content: 'You are a senior product designer. Be concise and specific. Return only JSON.' },
+                    { role: 'user', content: prompt }
+                ]
+            };
+            
+            // Add OpenRouter-specific fields
+            if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                requestBody.top_p = 1;
+                requestBody.frequency_penalty = 0;
+                requestBody.presence_penalty = 0;
+                requestBody.stream = false;
+            }
+            
+            // Debug the actual request being sent
+            showDebugInfo('🔍 API Key: ' + aiSettings.apiKey.substring(0, 15) + '... (length: ' + aiSettings.apiKey.length + ')', 'info');
+            showDebugInfo('🌐 Request URL: ' + aiSettings.baseUrl + '/chat/completions', 'info');
+            showDebugInfo('🤖 Model: ' + aiSettings.model, 'info');
+            
+            // OpenRouter requires different headers
+            var headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (aiSettings.baseUrl.includes('openrouter.ai')) {
+                headers['Authorization'] = 'Bearer ' + aiSettings.apiKey;
+                headers['HTTP-Referer'] = 'https://figma.com';
+                headers['X-Title'] = 'Ghost Designer Figma Plugin';
+                headers['Origin'] = 'https://figma.com';
+            } else {
+                headers['Authorization'] = 'Bearer ' + aiSettings.apiKey;
+            }
+            
+            showDebugInfo('📋 Headers: ' + JSON.stringify(headers), 'info');
+            
+            return fetch(aiSettings.baseUrl + '/chat/completions', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            }).then(function(res) {
+                showDebugInfo('📡 Response status: ' + res.status, res.ok ? 'success' : 'error');
+                if (!res.ok) {
+                    return res.text().then(function(text) {
+                        // Try to parse error details
+                        try {
+                            var errorData = JSON.parse(text);
+                            var errorMsg = errorData.error ? errorData.error.message : text;
+                            throw new Error('API Error: ' + errorMsg);
+                        } catch (e) {
+                            throw new Error('Status ' + res.status + ': ' + (text || 'Unknown error'));
+                        }
+                    });
+                }
+                return res.json();
+            }).then(function(data) {
+                var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+                if (!content) {
+                    throw new Error('No content in API response');
+                }
+                
+                try {
+                    return JSON.parse(content);
+                } catch (e) {
+                    // Try to extract JSON array from response
+                    var match = content.match(/\[[\s\S]*\]/);
+                    if (match) {
+                        return JSON.parse(match[0]);
+                    }
+                    
+                    // Fallback: return mock suggestions for testing
+                    showDebugInfo('⚠️ Could not parse AI response, using fallback suggestions', 'info');
+                    return [
+                        {
+                            issue: "Consider improving visual hierarchy",
+                            why: "Based on the analysis, the design could benefit from clearer information hierarchy",
+                            confidence: 0.8
+                        },
+                        {
+                            issue: "Optimize spacing consistency",
+                            why: "Some elements may benefit from more consistent spacing patterns",
+                            confidence: 0.75
+                        }
+                    ];
+                }
+            });
+        }
+        
+        function displayAISuggestions(suggestions) {
+            console.log('displayAISuggestions called with:', suggestions);
+            
+            if (!suggestions || suggestions.length === 0) {
+                console.log('No suggestions to display');
+                var noSuggestionsDiv = document.createElement('div');
+                noSuggestionsDiv.className = 'ai-suggestions';
+                noSuggestionsDiv.innerHTML = '<h4 style="margin: 0 0 8px 0; color: #059669;">AI Suggestions</h4><div style="color: #666;">No suggestions generated. Try a different prompt or check your API settings.</div>';
+                document.getElementById('results').appendChild(noSuggestionsDiv);
+                return;
+            }
+            
+            // Remove any existing AI suggestions first
+            var existingSuggestions = document.querySelector('.ai-suggestions');
+            if (existingSuggestions) {
+                existingSuggestions.remove();
+            }
+            
+            var suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'ai-suggestions';
+            
+            var html = '<h4 style="margin: 0 0 8px 0; color: #059669;">AI Suggestions</h4>';
+            
+            for (var i = 0; i < suggestions.length; i++) {
+                var s = suggestions[i];
+                var confidence = Math.round((s.confidence || 0.7) * 100);
+                html += '<div class="ai-suggestion" style="border: 1px solid #e5e7eb; padding: 12px; margin: 8px 0; border-radius: 6px; background: #f9fafb;">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">';
+                html += '<strong style="color: #1f2937;">' + (s.issue || 'Design suggestion') + '</strong>';
+                html += '<span style="font-size: 11px; color: #6b7280;">' + confidence + '% confidence</span>';
+                html += '</div>';
+                
+                if (s.principle) {
+                    html += '<div style="font-size: 12px; color: #059669; margin-bottom: 4px;"><strong>Principle:</strong> ' + s.principle + '</div>';
+                }
+                
+                if (s.why) {
+                    html += '<div style="font-size: 12px; color: #4b5563; margin-bottom: 8px;">' + s.why + '</div>';
+                }
+                
+                if (s.fix && s.fix.action && s.fix.params) {
+                    var fixDesc = 'Apply ' + s.fix.action;
+                    if (s.fix.params.hex) fixDesc += ' (' + s.fix.params.hex + ')';
+                    if (s.fix.params.value) fixDesc += ' (' + s.fix.params.value + 'px)';
+                    html += '<div style="font-size: 12px; color: #7c2d12; margin-bottom: 8px;"><strong>Fix:</strong> ' + fixDesc + '</div>';
+                }
+                
+                if (s.target_id && s.fix) {
+                    html += '<button onclick="applyStructuredFix(\'' + s.target_id + '\', \'' + JSON.stringify(s.fix).replace(/'/g, "\\'") + '\')" ';
+                    html += 'style="background: #059669; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;">Apply Fix</button>';
+                }
+                html += '</div>';
+            }
+            
+            suggestionsDiv.innerHTML = html;
+            document.getElementById('results').appendChild(suggestionsDiv);
+            
+            console.log('AI suggestions displayed successfully');
+        }
+        
+        function applyStructuredFix(targetId, fixJson) {
+            var fix = JSON.parse(fixJson);
+            showDebugInfo('🔧 Applying ' + fix.action + ' fix...', 'info');
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply_structured_fix',
+                    target_id: targetId,
+                    fix: fix
+                } 
+            }, '*');
+        }
+        
+        function applyAIFix(targetId, property, newValue) {
+            showDebugInfo('🔧 Applying fix: ' + property + ' = ' + newValue, 'info');
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply_fix',
+                    target_id: targetId,
+                    fix: {
+                        property: property,
+                        new_value: newValue
+                    }
+                } 
+            }, '*');
+        }
+        
+        function applyFix(button) {
+            var fixId = button.getAttribute('data-fix-id');
+            var nodeId = button.getAttribute('data-node-id');
+            var fixAction = button.getAttribute('data-fix-action');
+            var fixValueStr = button.getAttribute('data-fix-value');
+            
+            var fixValue;
+            try {
+                fixValue = JSON.parse(fixValueStr);
+            } catch (e) {
+                return;
+            }
+            
+            button.innerHTML = 'Fixing...';
+            button.disabled = true;
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply-fix', 
+                    fixData: { nodeId: nodeId, fixAction: fixAction, fixValue: fixValue }
+                } 
+            }, '*');
+        }
+        
+        function displayAnalysis(data) {
+            var resultsDiv = document.getElementById('results');
+            
+            if (data.error) {
+                resultsDiv.innerHTML = '<div class="stats" style="color: #f44;">' + data.error + '</div>';
+                return;
+            }
+            
+            currentAnalysisData = data;
+            
+            var html = '<div class="stats">Analyzed ' + data.totalComponents + ' component(s)</div>';
+            
+            for (var i = 0; i < data.components.length; i++) {
+                var component = data.components[i];
+                var issueCount = component.issues.length;
+                var issueText = '';
+                
+                if (issueCount === 0) {
+                    issueText = '<div class="no-issues">No issues found</div>';
+                } else {
+                    for (var j = 0; j < component.issues.length; j++) {
+                        var issue = component.issues[j];
+                        var fixButton = '';
+                        
+                        if (issue.fixAction) {
+                            fixButton = '<br><button class="fix-btn" ' +
+                                'data-fix-id="' + issue.fixId + '" ' +
+                                'data-node-id="' + issue.nodeId + '" ' +
+                                'data-fix-action="' + issue.fixAction + '" ' +
+                                'data-fix-value=\'' + JSON.stringify(issue.fixValue) + '\' ' +
+                                'onclick="applyFix(this)">Fix It</button>';
+                        }
+                        
+                        issueText += '<div class="issue ' + issue.severity + '">' +
+                            '<strong>' + issue.type.toUpperCase() + ':</strong> ' + issue.message +
+                            '<br><em>' + issue.suggestion + '</em>' +
+                            fixButton +
+                            '</div>';
+                    }
+                }
+                
+                html += '<div class="component">' +
+                    '<div class="component-header">' +
+                    component.name + ' (' + component.type + ')' +
+                    '<span style="font-size: 11px; color: #666; margin-left: 8px;">' +
+                    Math.round(component.bounds.width) + 'x' + Math.round(component.bounds.height) + 'px' +
+                    '</span>' +
+                    '</div>' +
+                    issueText +
+                    '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        window.onmessage = function(event) {
+            var msg = event.data.pluginMessage;
+            
+            if (msg && msg.type === 'analysis-result') {
+                displayAnalysis(msg.data);
+            }
+            
+            if (msg && msg.type === 'test-response') {
+                document.getElementById('results').innerHTML = 
+                    '<div class="stats" style="color: #059;">' + msg.data + '</div>';
+            }
+            
+            if (msg && msg.type === 'fix-result') {
+                var fixBtns = document.querySelectorAll('.fix-btn');
+                for (var i = 0; i < fixBtns.length; i++) {
+                    var btn = fixBtns[i];
+                    if (btn.innerHTML === 'Fixing...') {
+                        btn.innerHTML = 'Fix It';
+                        btn.disabled = false;
+                    }
+                }
+                
+                var statusDiv = document.createElement('div');
+                statusDiv.className = 'fix-status ' + (msg.success ? 'success' : 'error');
+                statusDiv.innerHTML = msg.success ? 'Success: ' + msg.message : 'Error: ' + msg.message;
+                
+                var resultsDiv = document.getElementById('results');
+                resultsDiv.appendChild(statusDiv);
+                
+                setTimeout(function() {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 3000);
+                
+                if (msg.success) {
+                    setTimeout(function() {
+                        analyzeComponents();
+                    }, 500);
+                }
+            }
+        };
+        
+        // Initialize on load
+        loadSettings();
+    </script>
+</body>
+</html>

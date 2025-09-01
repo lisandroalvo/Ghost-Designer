@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ghost Designer</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 16px; 
+            font-family: system-ui, sans-serif; 
+            background: white;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0066FF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px 4px 4px 0;
+            font-size: 12px;
+        }
+        button:hover { background: #0052CC; }
+        button.secondary { background: #6B7280; }
+        button.secondary:hover { background: #4B5563; }
+        
+        #results {
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .component {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+        }
+        .component-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .issue {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid;
+        }
+        .issue.error {
+            background: #fee;
+            border-color: #f44;
+            color: #900;
+        }
+        .issue.warning {
+            background: #ffe;
+            border-color: #fa0;
+            color: #940;
+        }
+        .issue.info {
+            background: #eef;
+            border-color: #38f;
+            color: #14a;
+        }
+        .issue.layout {
+            background: #efe;
+            border-color: #1b9;
+            color: #065;
+        }
+        .no-issues {
+            color: #059;
+            font-weight: bold;
+            padding: 8px;
+        }
+        .stats {
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #666;
+        }
+        .fix-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .fix-btn:hover { background: #059669; }
+        .fix-btn:disabled { 
+            background: #999; 
+            cursor: not-allowed; 
+        }
+        .fix-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .fix-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .fix-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <h2>🎨 Ghost Designer</h2>
+    <p>Select components and analyze for design issues</p>
+    
+    <button onclick="analyzeComponents()">🔍 Analyze Selection</button>
+    <button onclick="testPlugin()">🧪 Test</button>
+    <button class="secondary" onclick="closePlugin()">Close</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function analyzeComponents() {
+            document.getElementById('results').innerHTML = '<div class="stats">Analyzing components...</div>';
+            parent.postMessage({ pluginMessage: { type: 'analyze' } }, '*');
+        }
+        
+        function testPlugin() {
+            document.getElementById('results').innerHTML = '<div class="stats">Testing plugin...</div>';
+            parent.postMessage({ pluginMessage: { type: 'test' } }, '*');
+        }
+        
+        function closePlugin() {
+            parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+        }
+        
+        function applyFix(button) {
+            console.log('Fix button clicked');
+            
+            var fixId = button.getAttribute('data-fix-id');
+            var nodeId = button.getAttribute('data-node-id');
+            var fixAction = button.getAttribute('data-fix-action');
+            var fixValueStr = button.getAttribute('data-fix-value');
+            
+            console.log('Fix data:', fixId, nodeId, fixAction, fixValueStr);
+            
+            var fixValue;
+            try {
+                fixValue = JSON.parse(fixValueStr);
+            } catch (e) {
+                console.error('Failed to parse fixValue:', e);
+                return;
+            }
+            
+            button.innerHTML = '⏳ Fixing...';
+            button.disabled = true;
+            
+            console.log('Sending fix message');
+            
+            parent.postMessage({ 
+                pluginMessage: { 
+                    type: 'apply-fix', 
+                    fixData: { nodeId: nodeId, fixAction: fixAction, fixValue: fixValue }
+                } 
+            }, '*');
+        }
+        
+        function displayAnalysis(data) {
+            var resultsDiv = document.getElementById('results');
+            
+            if (data.error) {
+                resultsDiv.innerHTML = '<div class="stats" style="color: #f44;">' + data.error + '</div>';
+                return;
+            }
+            
+            var html = '<div class="stats">Analyzed ' + data.totalComponents + ' component(s)</div>';
+            
+            for (var i = 0; i < data.components.length; i++) {
+                var component = data.components[i];
+                var issueCount = component.issues.length;
+                var issueText = '';
+                
+                if (issueCount === 0) {
+                    issueText = '<div class="no-issues">✅ No issues found</div>';
+                } else {
+                    for (var j = 0; j < component.issues.length; j++) {
+                        var issue = component.issues[j];
+                        var fixButton = '';
+                        
+                        if (issue.fixAction) {
+                            fixButton = '<br><button class="fix-btn" ' +
+                                'data-fix-id="' + issue.fixId + '" ' +
+                                'data-node-id="' + issue.nodeId + '" ' +
+                                'data-fix-action="' + issue.fixAction + '" ' +
+                                'data-fix-value=\'' + JSON.stringify(issue.fixValue) + '\' ' +
+                                'onclick="applyFix(this)">🔧 Fix It</button>';
+                        }
+                        
+                        issueText += '<div class="issue ' + issue.severity + '">' +
+                            '<strong>' + issue.type.toUpperCase() + ':</strong> ' + issue.message +
+                            '<br><em>💡 ' + issue.suggestion + '</em>' +
+                            fixButton +
+                            '</div>';
+                    }
+                }
+                
+                html += '<div class="component">' +
+                    '<div class="component-header">' +
+                    component.name + ' (' + component.type + ')' +
+                    '<span style="font-size: 11px; color: #666; margin-left: 8px;">' +
+                    Math.round(component.bounds.width) + '×' + Math.round(component.bounds.height) + 'px' +
+                    '</span>' +
+                    '</div>' +
+                    issueText +
+                    '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        window.onmessage = function(event) {
+            var msg = event.data.pluginMessage;
+            
+            if (msg && msg.type === 'analysis-result') {
+                displayAnalysis(msg.data);
+            }
+            
+            if (msg && msg.type === 'test-response') {
+                document.getElementById('results').innerHTML = 
+                    '<div class="stats" style="color: #059;">' + msg.data + '</div>';
+            }
+            
+            if (msg && msg.type === 'fix-result') {
+                var fixBtns = document.querySelectorAll('.fix-btn');
+                for (var i = 0; i < fixBtns.length; i++) {
+                    var btn = fixBtns[i];
+                    if (btn.innerHTML === '⏳ Fixing...') {
+                        btn.innerHTML = '🔧 Fix It';
+                        btn.disabled = false;
+                    }
+                }
+                
+                var statusDiv = document.createElement('div');
+                statusDiv.className = 'fix-status ' + (msg.success ? 'success' : 'error');
+                statusDiv.innerHTML = msg.success ? '✅ ' + msg.message : '❌ ' + msg.message;
+                
+                var resultsDiv = document.getElementById('results');
+                resultsDiv.appendChild(statusDiv);
+                
+                setTimeout(function() {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 3000);
+                
+                if (msg.success) {
+                    setTimeout(function() {
+                        analyzeComponents();
+                    }, 500);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
