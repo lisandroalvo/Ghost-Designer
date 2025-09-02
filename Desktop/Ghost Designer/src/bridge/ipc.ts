@@ -1,10 +1,10 @@
 let _req = 0;
-const pending = new Map<number, {resolve: Function, reject: Function, type: string}>();
+const pending = new Map<number, {resolve: (value: unknown) => void, reject: (reason?: unknown) => void, type: string}>();
 
-export function send<T = any>(type: string, payload?: any): Promise<T> {
+export function send<T = unknown>(type: string, payload?: unknown): Promise<T> {
   const _reqId = ++_req;
-  return new Promise((resolve, reject) => {
-    pending.set(_reqId, { resolve, reject, type });
+  return new Promise<T>((resolve, reject) => {
+    pending.set(_reqId, { resolve: resolve as (value: unknown) => void, reject, type });
     parent.postMessage({ pluginMessage: { type, payload, _reqId } }, '*');
   });
 }
@@ -23,19 +23,21 @@ export const inFigma = typeof parent !== 'undefined' && location.ancestorOrigins
 // Demo mode fallbacks for web preview
 if (!inFigma) {
   // Override send function for demo mode
-  const demoSend = function<T=any>(type: string, payload?: any): Promise<T> {
+  const demoSend = function<T=unknown>(type: string, payload?: unknown): Promise<T> {
     // Provide demo responses for variable operations
     if (type === 'ensure_color_variable') {
+      const payloadObj = payload as Record<string, unknown> | undefined;
       return Promise.resolve({ 
         variableId: 'demo-var-' + Date.now(), 
-        name: payload?.variableName || 'demo-variable',
+        name: payloadObj?.variableName || 'demo-variable',
         collectionId: 'demo-collection',
         modeId: 'demo-mode'
       } as T);
     }
     if (type === 'apply_color_variable') {
+      const payloadObj = payload as Record<string, unknown> | undefined;
       return Promise.resolve({ 
-        nodeId: payload?.nodeId || 'demo-node', 
+        nodeId: payloadObj?.nodeId || 'demo-node', 
         variableId: 'demo-var-' + Date.now() 
       } as T);
     }
@@ -44,5 +46,5 @@ if (!inFigma) {
   };
   
   // Replace the export
-  (globalThis as any).demoSend = demoSend;
+  (globalThis as Record<string, unknown>).demoSend = demoSend;
 }

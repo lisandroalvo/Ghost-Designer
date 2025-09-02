@@ -60,12 +60,12 @@ export const DESIGN_TOKENS = {
 
 // Validation helpers
 export const isValidSpacing = (value: number): boolean => {
-  return SPACING_GRID.includes(value as any);
+  return SPACING_GRID.includes(value as typeof SPACING_GRID[number]);
 };
 
 export const isValidColor = (color: string): boolean => {
-  const validColors = Object.values(DESIGN_TOKENS.colors);
-  return validColors.includes(color as any);
+  const validColors = Object.values(DESIGN_TOKENS.colors) as string[];
+  return validColors.includes(color);
 };
 
 export const findClosestSpacing = (value: number): number => {

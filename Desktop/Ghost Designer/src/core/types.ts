@@ -11,7 +11,7 @@ export type AIFixAction =
 
 export interface AIFixPlan {
   action: AIFixAction;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
 }
 
 export interface Suggestion {
@@ -40,8 +40,8 @@ export interface DigestLayer {
 }
 export interface Digest {
   frameName: string;
-  grid?: any;
-  tokens?: any;
+  grid?: unknown;
+  tokens?: unknown;
   layers: DigestLayer[];
 }
 

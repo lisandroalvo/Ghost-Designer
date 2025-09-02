@@ -1,5 +1,5 @@
 import { AI_CONFIG } from "./constants";
-import { Digest, Issue, Suggestion } from "../core/types";
+import { Digest, Issue, Suggestion, AIFixAction } from "../core/types";
 
 function compactDigest(d: Digest) {
   const layers = (d.layers || []).slice(0, 80).map(l => ({
@@ -25,17 +25,19 @@ Allowed fix.action values and params:
 - "bind_color_variable": { collectionName:string, variableName:string, hex:"#RRGGBB" }
 `.trim();
 
-function clamp01(n: any) {
+function clamp01(n: unknown) {
   const x = Number(n); return Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.7;
 }
-function coerceSuggestion(o: any): Suggestion | null {
+function coerceSuggestion(o: unknown): Suggestion | null {
   if (!o || typeof o !== "object") return null;
-  const issue = String(o.issue ?? "").trim();
-  const target_id = String(o.target_id ?? "").trim();
-  const why = String(o.why ?? "").trim();
-  const principle = o.principle ? String(o.principle) : undefined;
-  const fix = o.fix && typeof o.fix === "object" ? { action: String(o.fix.action) as any, params: o.fix.params ?? {} } : undefined;
-  const confidence = clamp01(o.confidence ?? 0.7);
+  const obj = o as Record<string, unknown>;
+  const issue = String(obj.issue ?? "").trim();
+  const target_id = String(obj.target_id ?? "").trim();
+  const why = String(obj.why ?? "").trim();
+  const principle = obj.principle ? String(obj.principle) : undefined;
+  const fixObj = obj.fix as Record<string, unknown> | null | undefined;
+  const fix = fixObj && typeof fixObj === "object" && fixObj !== null ? { action: String(fixObj.action) as AIFixAction, params: (fixObj.params as Record<string, unknown>) ?? {} as Record<string, unknown> } : undefined;
+  const confidence = clamp01(obj.confidence ?? 0.7);
   if (!issue || !target_id) return null;
   return { issue, target_id, why, principle, fix, confidence };
 }
@@ -45,11 +47,11 @@ function safeParse(text: string): Suggestion[] {
     const arr = Array.isArray(json) ? json : json?.suggestions;
     return Array.isArray(arr) ? arr.map(coerceSuggestion).filter(Boolean) as Suggestion[] : [];
   };
-  try { return tryParse(text); } catch {}
+  try { return tryParse(text); } catch { /* ignore parse errors */ }
   const fence = text.match(/```json\s*([\s\S]*?)\s*```/i) || text.match(/```\s*([\s\S]*?)\s*```/i);
-  if (fence?.[1]) { try { return tryParse(fence[1]); } catch {} }
+  if (fence?.[1]) { try { return tryParse(fence[1]); } catch { /* ignore parse errors */ } }
   const bracket = text.match(/\[\s*{[\s\S]*}\s*\]/);
-  if (bracket) { try { return tryParse(bracket[0]); } catch {} }
+  if (bracket) { try { return tryParse(bracket[0]); } catch { /* ignore parse errors */ } }
   return [];
 }
 
