@@ -2,10 +2,12 @@ import React from 'react';
 
 interface TranscriptCardProps {
   transcript: string;
+  summary?: string;
+  isSummarizing?: boolean;
   error: string;
 }
 
-export function TranscriptCard({ transcript, error }: TranscriptCardProps) {
+export function TranscriptCard({ transcript, summary, isSummarizing, error }: TranscriptCardProps) {
   return (
     <div className="w-full max-w-3xl mx-auto px-8 py-12">
       <div className="bg-[#111418] rounded-[28px] border border-[#87F1C6]/10 overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.3)]">
@@ -28,10 +30,41 @@ export function TranscriptCard({ transcript, error }: TranscriptCardProps) {
         {/* Content */}
         <div className="px-10 py-10 min-h-[400px] max-h-[600px] overflow-y-auto scroll-fade-bottom">
           {transcript ? (
-            <div className="animate-fade-in">
-              <p className="text-[#F2F3F2] leading-[2] tracking-[0.02em] whitespace-pre-wrap">
-                {transcript}
-              </p>
+            <div className="animate-fade-in space-y-8">
+              {/* Summary Section */}
+              {(summary || isSummarizing) && (
+                <div className="pb-8 border-b border-[#3F4448]/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-[#87F1C6]"></div>
+                    <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
+                      Key Takeaways
+                    </h3>
+                  </div>
+                  {isSummarizing ? (
+                    <div className="flex items-center gap-3 text-[#9BA3A0]">
+                      <div className="w-4 h-4 border-2 border-[#87F1C6]/30 border-t-[#87F1C6] rounded-full animate-spin"></div>
+                      <span className="tracking-wide">Generating summary...</span>
+                    </div>
+                  ) : (
+                    <div className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em] whitespace-pre-wrap">
+                      {summary}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transcript Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-[#3F4448]"></div>
+                  <h3 className="text-[#9BA3A0] text-sm tracking-[0.1em] uppercase font-medium">
+                    Full Transcript
+                  </h3>
+                </div>
+                <p className="text-[#F2F3F2] leading-[2] tracking-[0.02em] whitespace-pre-wrap">
+                  {transcript}
+                </p>
+              </div>
             </div>
           ) : (
             // Empty State

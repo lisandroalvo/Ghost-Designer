@@ -8,6 +8,8 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [summary, setSummary] = useState('');
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [error, setError] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   
@@ -19,6 +21,7 @@ export default function App() {
     try {
       setError('');
       setTranscript('');
+      setSummary('');
       
       if (!window.isSecureContext) {
         throw new Error('Microphone access requires a secure connection (HTTPS)');
@@ -195,6 +198,7 @@ export default function App() {
 
       if (data.transcript) {
         setTranscript(data.transcript);
+        await generateSummary(data.transcript);
       } else {
         throw new Error('No transcript in response');
       }
@@ -204,6 +208,45 @@ export default function App() {
       setError(`Transcription failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsTranscribing(false);
+    }
+  };
+
+  const generateSummary = async (transcriptText: string) => {
+    setIsSummarizing(true);
+    
+    try {
+      console.log('Generating summary...');
+
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-b1d03c55/summarize`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ transcript: transcriptText }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Summary received:', data);
+
+      if (data.summary) {
+        setSummary(data.summary);
+      } else {
+        throw new Error('No summary in response');
+      }
+
+    } catch (err) {
+      console.error('Summary error:', err);
+    } finally {
+      setIsSummarizing(false);
     }
   };
 
@@ -222,6 +265,8 @@ export default function App() {
         
         <TranscriptCard
           transcript={transcript}
+          summary={summary}
+          isSummarizing={isSummarizing}
           error={error}
         />
       </main>
