@@ -10,6 +10,11 @@ export interface TranscriptionResponse {
   audioType: string;
 }
 
+export interface SummaryResponse {
+  summary: string;
+  transcriptLength: number;
+}
+
 export interface TranscriptionError {
   error: string;
 }
@@ -36,6 +41,26 @@ export async function transcribeAudio(
   if (!response.ok) {
     const error: TranscriptionError = await response.json();
     throw new Error(error.error || 'Transcription failed');
+  }
+
+  return response.json();
+}
+
+export async function generateSummary(
+  transcript: string
+): Promise<SummaryResponse> {
+  const response = await fetch(SUPABASE_CONFIG.transcriptionUrl.replace('/transcribe', '/summarize'), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_CONFIG.publicAnonKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ transcript }),
+  });
+
+  if (!response.ok) {
+    const error: TranscriptionError = await response.json();
+    throw new Error(error.error || 'Summary generation failed');
   }
 
   return response.json();

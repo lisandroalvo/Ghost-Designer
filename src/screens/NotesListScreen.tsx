@@ -95,7 +95,16 @@ export default function NotesListScreen({ navigation }: NotesListScreenProps) {
         <Text style={styles.noteDuration}>{formatDuration(item.duration)}</Text>
       </View>
       
-      <Text style={styles.noteText} numberOfLines={3}>
+      {item.summary && (
+        <View style={styles.summarySection}>
+          <Text style={styles.summaryLabel}>💡 Key Takeaways</Text>
+          <Text style={styles.summaryText} numberOfLines={2}>
+            {item.summary}
+          </Text>
+        </View>
+      )}
+      
+      <Text style={styles.noteText} numberOfLines={item.summary ? 2 : 3}>
         {item.transcript}
       </Text>
       
@@ -198,6 +207,27 @@ const styles = StyleSheet.create({
   noteDuration: {
     fontSize: 12,
     color: '#64748b',
+  },
+  summarySection: {
+    backgroundColor: '#0f172a',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  },
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#3b82f6',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  summaryText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#cbd5e1',
   },
   noteText: {
     fontSize: 15,

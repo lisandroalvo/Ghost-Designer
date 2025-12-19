@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRecording } from '../hooks/useRecording';
-import { transcribeAudio } from '../services/supabase';
+import { transcribeAudio, generateSummary } from '../services/supabase';
 import { saveNote } from '../services/storage';
 
 interface HomeScreenProps {
@@ -19,13 +19,16 @@ interface HomeScreenProps {
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { state, startRecording, stopRecording, cancelRecording } = useRecording();
   const [transcript, setTranscript] = useState<string>('');
+  const [summary, setSummary] = useState<string>('');
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [error, setError] = useState<string>('');
 
   const handleStartRecording = async () => {
     try {
       setError('');
       setTranscript('');
+      setSummary('');
       await startRecording();
     } catch (err) {
       Alert.alert('Error', 'Failed to start recording. Please check microphone permissions.');
@@ -43,11 +46,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const result = await transcribeAudio(uri);
       setTranscript(result.transcript);
 
-      await saveNote({
-        transcript: result.transcript,
-        duration: state.duration,
-        audioSize: result.audioSize,
-      });
+      setIsSummarizing(true);
+      try {
+        const summaryResult = await generateSummary(result.transcript);
+        setSummary(summaryResult.summary);
+
+        await saveNote({
+          transcript: result.transcript,
+          summary: summaryResult.summary,
+          duration: state.duration,
+          audioSize: result.audioSize,
+        });
+      } catch (summaryErr) {
+        console.error('Summary generation failed:', summaryErr);
+        await saveNote({
+          transcript: result.transcript,
+          duration: state.duration,
+          audioSize: result.audioSize,
+        });
+      } finally {
+        setIsSummarizing(false);
+      }
 
       Alert.alert(
         'Note Saved',
@@ -145,8 +164,28 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
       {transcript && !isTranscribing && (
         <ScrollView style={styles.transcriptContainer}>
+          {(summary || isSummarizing) && (
+            <View style={[styles.transcriptCard, styles.summaryCard]}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelDot} />
+                <Text style={styles.summaryLabel}>Key Takeaways</Text>
+              </View>
+              {isSummarizing ? (
+                <View style={styles.summaryLoading}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                  <Text style={styles.loadingText}>Generating summary...</Text>
+                </View>
+              ) : (
+                <Text style={styles.summaryText}>{summary}</Text>
+              )}
+            </View>
+          )}
+          
           <View style={styles.transcriptCard}>
-            <Text style={styles.transcriptLabel}>Transcript</Text>
+            <View style={styles.labelRow}>
+              <View style={[styles.labelDot, styles.labelDotGray]} />
+              <Text style={styles.transcriptLabel}>Full Transcript</Text>
+            </View>
             <Text style={styles.transcriptText}>{transcript}</Text>
           </View>
         </ScrollView>
@@ -286,13 +325,48 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
   },
+  summaryCard: {
+    borderColor: '#3b82f6',
+    borderWidth: 1,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  labelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3b82f6',
+  },
+  labelDotGray: {
+    backgroundColor: '#475569',
+  },
   transcriptLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#94a3b8',
-    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  summaryLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  summaryText: {
+    fontSize: 15,
+    color: '#f1f5f9',
+    lineHeight: 22,
   },
   transcriptText: {
     fontSize: 16,
