@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "TalkNotes",
+    "slug": "talknotes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lisandroalvo.talknotes",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "TalkNotes needs access to your microphone to record audio notes.",
+        "UIBackgroundModes": ["audio"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.lisandroalvo.talknotes",
+      "permissions": ["RECORD_AUDIO"],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow TalkNotes to access your microphone to record audio notes."
+        }
+      ]
+    ]
+  }
+}
