@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Header } from './components/Header';
 import { ZenControl } from './components/ZenControl';
 import { TranscriptCard } from './components/TranscriptCard';
@@ -6,6 +6,10 @@ import DocumentExport from './components/DocumentExport';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('talknotes-theme');
+    return saved ? saved === 'dark' : true;
+  });
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -24,6 +28,14 @@ export default function App() {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [useRealtime, setUseRealtime] = useState(true);
   const realtimeTranscriptRef = useRef<string>('');
+
+  useEffect(() => {
+    localStorage.setItem('talknotes-theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   const startRecording = async () => {
     try {
@@ -404,8 +416,31 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0D10]">
+    <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-[#0B0D10]' : 'bg-gray-50'}`}>
       <Header />
+      
+      {/* Theme Toggle Switch */}
+      <div className="fixed top-6 right-6 z-50">
+        <button
+          onClick={toggleTheme}
+          className={`p-3 rounded-xl transition-all duration-300 ${
+            isDarkMode 
+              ? 'bg-[#111418] border border-[#3F4448] hover:bg-[#1a1d23]' 
+              : 'bg-white border border-gray-300 hover:bg-gray-100 shadow-md'
+          }`}
+          aria-label="Toggle theme"
+        >
+          {isDarkMode ? (
+            <svg className="w-5 h-5 text-[#F2F3F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
+      </div>
       
       <main className="pb-20">
         <ZenControl
