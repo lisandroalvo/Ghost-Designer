@@ -419,25 +419,30 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-[#0B0D10]' : 'bg-gray-50'}`}>
       <Header />
       
-      {/* Theme Toggle Switch */}
-      <div className="fixed top-6 right-6 z-50">
+      {/* Theme Toggle Switch - Large and Visible */}
+      <div className="fixed top-24 right-8 z-[9999]">
         <button
           onClick={toggleTheme}
-          className={`p-3 rounded-xl transition-all duration-300 ${
+          className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 shadow-xl ${
             isDarkMode 
-              ? 'bg-[#111418] border border-[#3F4448] hover:bg-[#1a1d23]' 
-              : 'bg-white border border-gray-300 hover:bg-gray-100 shadow-md'
+              ? 'bg-gradient-to-r from-[#111418] to-[#1a1d23] border-2 border-[#87F1C6] hover:border-[#6EE7B7]' 
+              : 'bg-gradient-to-r from-white to-gray-50 border-2 border-gray-400 hover:border-gray-600 shadow-2xl'
           }`}
-          aria-label="Toggle theme"
         >
           {isDarkMode ? (
-            <svg className="w-5 h-5 text-[#F2F3F2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+            <>
+              <svg className="w-6 h-6 text-[#87F1C6]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span className="text-[#F2F3F2] font-semibold text-sm">Light Mode</span>
+            </>
           ) : (
-            <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
+            <>
+              <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+              <span className="text-gray-800 font-semibold text-sm">Dark Mode</span>
+            </>
           )}
         </button>
       </div>
