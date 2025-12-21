@@ -89,10 +89,20 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         logging: false,
         foreignObjectRendering: false,
         onclone: (clonedDoc) => {
-          // Remove all stylesheets and style tags to prevent oklch colors
+          // Remove all stylesheets and style tags
           const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
           styles.forEach(style => style.remove());
-          console.log('Removed', styles.length, 'style elements from clone');
+          
+          // Override ALL element styles to prevent oklch colors
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            if (el instanceof HTMLElement) {
+              el.style.borderColor = 'rgb(229, 231, 235)';
+              el.style.outlineColor = 'rgb(229, 231, 235)';
+            }
+          });
+          
+          console.log('Processed', allElements.length, 'elements in clone');
         },
       });
 
@@ -136,10 +146,20 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         logging: false,
         foreignObjectRendering: false,
         onclone: (clonedDoc) => {
-          // Remove all stylesheets and style tags to prevent oklch colors
+          // Remove all stylesheets and style tags
           const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
           styles.forEach(style => style.remove());
-          console.log('Removed', styles.length, 'style elements from clone');
+          
+          // Override ALL element styles to prevent oklch colors
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            if (el instanceof HTMLElement) {
+              el.style.borderColor = 'rgb(229, 231, 235)';
+              el.style.outlineColor = 'rgb(229, 231, 235)';
+            }
+          });
+          
+          console.log('Processed', allElements.length, 'elements in clone');
         },
       });
 
