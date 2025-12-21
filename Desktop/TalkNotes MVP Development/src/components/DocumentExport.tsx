@@ -73,7 +73,10 @@ export default function DocumentExport({ transcript, summary, language, onClose 
   const comprehensionScore = calculateComprehension();
 
   const exportToPDF = async () => {
-    if (!documentRef.current) return;
+    if (!documentRef.current) {
+      alert('Document not ready. Please try again.');
+      return;
+    }
     setIsExporting(true);
 
     try {
@@ -81,6 +84,7 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         scale: 2,
         useCORS: true,
         backgroundColor: '#FFFFFF',
+        logging: false,
       });
 
       const imgWidth = 210;
@@ -91,15 +95,21 @@ export default function DocumentExport({ transcript, summary, language, onClose 
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`TalkNotes-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      console.log('✅ PDF exported successfully');
     } catch (error) {
       console.error('PDF export error:', error);
+      alert('Failed to export PDF. Please try again.');
     } finally {
       setIsExporting(false);
     }
   };
 
   const exportToJPG = async () => {
-    if (!documentRef.current) return;
+    if (!documentRef.current) {
+      alert('Document not ready. Please try again.');
+      return;
+    }
     setIsExporting(true);
 
     try {
@@ -107,6 +117,7 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         scale: 2,
         useCORS: true,
         backgroundColor: '#FFFFFF',
+        logging: false,
       });
 
       canvas.toBlob((blob) => {
@@ -117,10 +128,14 @@ export default function DocumentExport({ transcript, summary, language, onClose 
           link.download = `TalkNotes-${new Date().toISOString().split('T')[0]}.jpg`;
           link.click();
           URL.revokeObjectURL(url);
+          console.log('✅ JPG exported successfully');
+        } else {
+          alert('Failed to create image. Please try again.');
         }
       }, 'image/jpeg', 0.95);
     } catch (error) {
       console.error('JPG export error:', error);
+      alert('Failed to export JPG. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -331,10 +346,10 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 border-t border-[#3F4448]/50 flex gap-3 justify-end bg-gradient-to-r from-[#0B0D10] to-[#111418]">
+        <div className="p-6 border-t border-[#3F4448]/50 flex gap-4 justify-end bg-gradient-to-br from-[#0B0D10] via-[#111418] to-[#0F1115]">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-[#9BA3A0] hover:text-[#F2F3F2] border border-[#3F4448] hover:border-[#9BA3A0] transition-all"
+            className="px-6 py-3 rounded-xl text-sm font-semibold text-[#9BA3A0] hover:text-[#F2F3F2] bg-[#1a1d23]/50 hover:bg-[#1a1d23] border-2 border-[#3F4448]/50 hover:border-[#3F4448] transition-all duration-300 shadow-lg hover:shadow-xl"
             disabled={isExporting}
           >
             Cancel
@@ -342,24 +357,22 @@ export default function DocumentExport({ transcript, summary, language, onClose 
           <button
             onClick={exportToJPG}
             disabled={isExporting}
-            className="group relative px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#111418] border border-[#3F4448] hover:border-[#9BA3A0] text-[#F2F3F2] transition-all disabled:opacity-50 flex items-center gap-2 overflow-hidden"
+            className="group relative px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-br from-[#2D3139] via-[#1a1d23] to-[#252932] hover:from-[#3F4448] hover:via-[#2D3139] hover:to-[#363a45] text-white transition-all duration-300 disabled:opacity-50 flex items-center gap-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_30px_rgba(0,0,0,0.4)] border-2 border-[#4F5458]/50 hover:border-[#6B7280] transform hover:scale-[1.02]"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#9BA3A0]/0 via-[#9BA3A0]/10 to-[#9BA3A0]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg className="w-4 h-4 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span className="relative z-10">{isExporting ? 'Exporting...' : 'Export JPG'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Export JPG'}</span>
           </button>
           <button
             onClick={exportToPDF}
             disabled={isExporting}
-            className="group relative px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#111418] border border-[#87F1C6] hover:border-[#6EE7B7] text-[#F2F3F2] transition-all disabled:opacity-50 flex items-center gap-2 overflow-hidden"
+            className="group relative px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-br from-[#10B981] via-[#059669] to-[#047857] hover:from-[#059669] hover:via-[#047857] hover:to-[#065f46] text-white transition-all duration-300 disabled:opacity-50 flex items-center gap-2.5 shadow-[0_4px_20px_rgba(16,185,129,0.4)] hover:shadow-[0_8px_35px_rgba(16,185,129,0.6)] border-2 border-[#34D399]/30 hover:border-[#34D399]/60 transform hover:scale-[1.02]"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-[#87F1C6]/0 via-[#87F1C6]/10 to-[#87F1C6]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg className="w-4 h-4 text-[#87F1C6] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            <span className="relative z-10">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
+            <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>
           </button>
         </div>
       </div>
