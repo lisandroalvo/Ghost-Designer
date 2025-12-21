@@ -80,26 +80,35 @@ export default function DocumentExport({ transcript, summary, language, onClose 
     setIsExporting(true);
 
     try {
+      console.log('Starting PDF export...');
       const canvas = await html2canvas(documentRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#FFFFFF',
-        logging: false,
+        logging: true,
+        windowWidth: documentRef.current.scrollWidth,
+        windowHeight: documentRef.current.scrollHeight,
       });
 
+      console.log('Canvas created:', canvas.width, 'x', canvas.height);
+      
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png');
       
+      console.log('Adding image to PDF...');
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       pdf.save(`TalkNotes-${new Date().toISOString().split('T')[0]}.pdf`);
       
       console.log('✅ PDF exported successfully');
+      alert('PDF exported successfully!');
     } catch (error) {
       console.error('PDF export error:', error);
-      alert('Failed to export PDF. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to export PDF: ${errorMsg}`);
     } finally {
       setIsExporting(false);
     }
@@ -113,13 +122,19 @@ export default function DocumentExport({ transcript, summary, language, onClose 
     setIsExporting(true);
 
     try {
+      console.log('Starting JPG export...');
       const canvas = await html2canvas(documentRef.current, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#FFFFFF',
-        logging: false,
+        logging: true,
+        windowWidth: documentRef.current.scrollWidth,
+        windowHeight: documentRef.current.scrollHeight,
       });
 
+      console.log('Canvas created:', canvas.width, 'x', canvas.height);
+      
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
@@ -129,14 +144,17 @@ export default function DocumentExport({ transcript, summary, language, onClose 
           link.click();
           URL.revokeObjectURL(url);
           console.log('✅ JPG exported successfully');
+          alert('JPG exported successfully!');
+          setIsExporting(false);
         } else {
           alert('Failed to create image. Please try again.');
+          setIsExporting(false);
         }
       }, 'image/jpeg', 0.95);
     } catch (error) {
       console.error('JPG export error:', error);
-      alert('Failed to export JPG. Please try again.');
-    } finally {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to export JPG: ${errorMsg}`);
       setIsExporting(false);
     }
   };
