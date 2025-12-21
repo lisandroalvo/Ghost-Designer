@@ -419,7 +419,7 @@ export default function App() {
           </label>
 
           {(() => {
-            const preset = ['English', 'Spanish', 'Portuguese', 'French'];
+            const preset = ['English', 'Spanish', 'Portuguese', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Chinese', 'Arabic', 'Russian', 'Hindi', 'Bengali', 'Thai', 'Vietnamese', 'Turkish', 'Polish', 'Dutch', 'Swedish', 'Norwegian', 'Danish', 'Finnish', 'Greek', 'Hebrew', 'Indonesian', 'Malay', 'Filipino', 'Czech', 'Romanian', 'Hungarian', 'Ukrainian', 'Catalan', 'Croatian', 'Serbian', 'Bulgarian', 'Slovak', 'Slovenian', 'Lithuanian', 'Latvian', 'Estonian', 'Icelandic', 'Irish', 'Welsh', 'Basque', 'Galician', 'Albanian', 'Macedonian', 'Bosnian', 'Azerbaijani', 'Georgian', 'Armenian', 'Kazakh', 'Uzbek', 'Mongolian', 'Nepali', 'Sinhala', 'Burmese', 'Khmer', 'Lao', 'Urdu', 'Persian', 'Pashto', 'Kurdish', 'Amharic', 'Swahili', 'Yoruba', 'Igbo', 'Zulu', 'Afrikaans', 'Somali', 'Hausa', 'Oromo', 'Malagasy'];
             const trimmed = targetLanguage.trim();
             const selectValue =
               trimmed === ''
@@ -449,10 +449,89 @@ export default function App() {
                     }}
                   >
                     <option value="original">Original language</option>
-                    <option value="English">English</option>
-                    <option value="Spanish">Spanish</option>
-                    <option value="Portuguese">Portuguese</option>
-                    <option value="French">French</option>
+                    <optgroup label="Popular">
+                      <option value="English">English</option>
+                      <option value="Spanish">Spanish</option>
+                      <option value="French">French</option>
+                      <option value="German">German</option>
+                      <option value="Italian">Italian</option>
+                      <option value="Portuguese">Portuguese</option>
+                      <option value="Chinese">Chinese (Mandarin)</option>
+                      <option value="Japanese">Japanese</option>
+                      <option value="Korean">Korean</option>
+                      <option value="Arabic">Arabic</option>
+                      <option value="Russian">Russian</option>
+                      <option value="Hindi">Hindi</option>
+                    </optgroup>
+                    <optgroup label="Asian">
+                      <option value="Bengali">Bengali</option>
+                      <option value="Thai">Thai</option>
+                      <option value="Vietnamese">Vietnamese</option>
+                      <option value="Indonesian">Indonesian</option>
+                      <option value="Malay">Malay</option>
+                      <option value="Filipino">Filipino (Tagalog)</option>
+                      <option value="Burmese">Burmese</option>
+                      <option value="Khmer">Khmer (Cambodian)</option>
+                      <option value="Lao">Lao</option>
+                      <option value="Nepali">Nepali</option>
+                      <option value="Sinhala">Sinhala</option>
+                      <option value="Urdu">Urdu</option>
+                      <option value="Persian">Persian (Farsi)</option>
+                      <option value="Mongolian">Mongolian</option>
+                    </optgroup>
+                    <optgroup label="European">
+                      <option value="Turkish">Turkish</option>
+                      <option value="Polish">Polish</option>
+                      <option value="Dutch">Dutch</option>
+                      <option value="Swedish">Swedish</option>
+                      <option value="Norwegian">Norwegian</option>
+                      <option value="Danish">Danish</option>
+                      <option value="Finnish">Finnish</option>
+                      <option value="Greek">Greek</option>
+                      <option value="Czech">Czech</option>
+                      <option value="Romanian">Romanian</option>
+                      <option value="Hungarian">Hungarian</option>
+                      <option value="Ukrainian">Ukrainian</option>
+                      <option value="Catalan">Catalan</option>
+                      <option value="Croatian">Croatian</option>
+                      <option value="Serbian">Serbian</option>
+                      <option value="Bulgarian">Bulgarian</option>
+                      <option value="Slovak">Slovak</option>
+                      <option value="Slovenian">Slovenian</option>
+                      <option value="Lithuanian">Lithuanian</option>
+                      <option value="Latvian">Latvian</option>
+                      <option value="Estonian">Estonian</option>
+                      <option value="Icelandic">Icelandic</option>
+                      <option value="Irish">Irish</option>
+                      <option value="Welsh">Welsh</option>
+                      <option value="Basque">Basque</option>
+                      <option value="Galician">Galician</option>
+                      <option value="Albanian">Albanian</option>
+                      <option value="Macedonian">Macedonian</option>
+                      <option value="Bosnian">Bosnian</option>
+                    </optgroup>
+                    <optgroup label="Middle Eastern & Caucasus">
+                      <option value="Hebrew">Hebrew</option>
+                      <option value="Pashto">Pashto</option>
+                      <option value="Kurdish">Kurdish</option>
+                      <option value="Azerbaijani">Azerbaijani</option>
+                      <option value="Georgian">Georgian</option>
+                      <option value="Armenian">Armenian</option>
+                      <option value="Kazakh">Kazakh</option>
+                      <option value="Uzbek">Uzbek</option>
+                    </optgroup>
+                    <optgroup label="African">
+                      <option value="Amharic">Amharic</option>
+                      <option value="Swahili">Swahili</option>
+                      <option value="Yoruba">Yoruba</option>
+                      <option value="Igbo">Igbo</option>
+                      <option value="Zulu">Zulu</option>
+                      <option value="Afrikaans">Afrikaans</option>
+                      <option value="Somali">Somali</option>
+                      <option value="Hausa">Hausa</option>
+                      <option value="Oromo">Oromo</option>
+                      <option value="Malagasy">Malagasy</option>
+                    </optgroup>
                     <option value="custom">Custom…</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-[#3F4448]">

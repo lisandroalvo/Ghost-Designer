@@ -71,7 +71,7 @@ wss.on('connection', (clientWs) => {
             type: 'server_vad',
             threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 500
+            silence_duration_ms: 200  // Reduced from 500ms for faster detection
           }
         }
       }));
@@ -105,7 +105,7 @@ wss.on('connection', (clientWs) => {
           if (transcript && targetLanguage) {
             console.log('[Realtime Gateway] Translating:', transcript);
             
-            // Call OpenAI Chat Completions API for instant translation
+            // Call OpenAI Chat Completions API for fast translation
             fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -117,14 +117,15 @@ wss.on('connection', (clientWs) => {
                 messages: [
                   {
                     role: 'system',
-                    content: `You are a translator. Translate the following text to ${targetLanguage}. Output ONLY the translation, nothing else.`
+                    content: `Translate to ${targetLanguage}. Output ONLY the translation.`
                   },
                   {
                     role: 'user',
                     content: transcript
                   }
                 ],
-                temperature: 0.3
+                temperature: 0,
+                max_tokens: 300
               })
             })
             .then(res => res.json())
