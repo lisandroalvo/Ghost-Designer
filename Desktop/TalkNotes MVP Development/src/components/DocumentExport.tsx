@@ -114,99 +114,125 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         </div>
 
         {/* Document Preview */}
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D10]">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', backgroundColor: '#0B0D10' }}>
           <div 
             ref={documentRef}
-            className="bg-white rounded-xl shadow-2xl mx-auto p-12 max-w-4xl"
             style={{ 
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              padding: '48px',
+              maxWidth: '800px',
+              margin: '0 auto',
+              minHeight: '600px'
             }}
           >
-            {/* Header Section */}
-            <div className="mb-12 pb-8 border-b-2 border-gray-200">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h1 className="text-4xl font-black text-gray-900 mb-2">TalkNotes</h1>
-                  <p className="text-lg text-gray-500">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            {/* Header */}
+            <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '2px solid #E5E7EB' }}>
+              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
+                TalkNotes
+              </h1>
+              <p style={{ fontSize: '14px', color: '#6B7280' }}>
+                {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+              {language && language !== 'Original' && (
+                <div style={{ 
+                  display: 'inline-block', 
+                  marginTop: '16px',
+                  padding: '8px 16px', 
+                  backgroundColor: '#10B981', 
+                  color: 'white', 
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  {language}
                 </div>
-                {language && language !== 'Original' && (
-                  <div className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg text-sm font-semibold shadow-lg">
-                    {language}
-                  </div>
-                )}
+              )}
+            </div>
+
+            {/* Stats */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, 1fr)', 
+              gap: '16px',
+              marginBottom: '32px',
+              padding: '16px',
+              backgroundColor: '#F9FAFB',
+              borderRadius: '8px'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10B981' }}>{wordCount}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase' }}>Words</div>
               </div>
-              
-              {/* Stats Bar */}
-              <div className="grid grid-cols-3 gap-4 mt-6 bg-gray-50 rounded-lg p-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-emerald-600">{wordCount}</div>
-                  <div className="text-xs text-gray-600 uppercase tracking-wider">Words</div>
-                </div>
-                <div className="text-center border-x border-gray-200">
-                  <div className="text-3xl font-bold text-blue-600">{readTime}</div>
-                  <div className="text-xs text-gray-600 uppercase tracking-wider">Min Read</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">{keyPoints.length}</div>
-                  <div className="text-xs text-gray-600 uppercase tracking-wider">Key Points</div>
-                </div>
+              <div style={{ textAlign: 'center', borderLeft: '1px solid #E5E7EB', borderRight: '1px solid #E5E7EB' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3B82F6' }}>{readTime}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase' }}>Min Read</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8B5CF6' }}>{keyPoints.length}</div>
+                <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase' }}>Key Points</div>
               </div>
             </div>
 
-            {/* Key Takeaways Section */}
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-xl flex items-center justify-center text-lg font-black shadow-lg">
-                  1
-                </span>
+            {/* Summary */}
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>
                 Key Takeaways
               </h2>
-              
-              {/* Summary Text */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 mb-6 border border-gray-200">
-                <p className="text-gray-800 leading-relaxed text-lg whitespace-pre-wrap">
+              <div style={{ 
+                backgroundColor: '#F3F4F6',
+                padding: '24px',
+                borderRadius: '12px',
+                marginBottom: '16px'
+              }}>
+                <p style={{ color: '#374151', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
                   {summary}
                 </p>
               </div>
-
-              {/* Key Points List */}
-              <div className="space-y-3">
-                {keyPoints.map((point, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded">
-                    <span className="text-emerald-600 font-bold text-lg">✓</span>
-                    <p className="text-gray-700 leading-relaxed">{point}</p>
-                  </div>
-                ))}
-              </div>
+              
+              {/* Key Points */}
+              {keyPoints.map((point, idx) => (
+                <div key={idx} style={{ 
+                  display: 'flex',
+                  gap: '12px',
+                  padding: '12px',
+                  marginBottom: '8px',
+                  backgroundColor: '#ECFDF5',
+                  borderLeft: '4px solid #10B981',
+                  borderRadius: '4px'
+                }}>
+                  <span style={{ color: '#10B981', fontWeight: 'bold', fontSize: '18px' }}>✓</span>
+                  <p style={{ color: '#374151', lineHeight: '1.6', flex: 1 }}>{point}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Full Transcript Section */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center text-lg font-black shadow-lg">
-                  2
-                </span>
+            {/* Transcript */}
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>
                 Full Transcript
               </h2>
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200">
-                <p className="text-gray-800 leading-relaxed text-base whitespace-pre-wrap">
+              <div style={{ 
+                backgroundColor: '#EFF6FF',
+                padding: '24px',
+                borderRadius: '12px',
+                border: '1px solid #DBEAFE'
+              }}>
+                <p style={{ color: '#374151', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
                   {transcript}
                 </p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="mt-12 pt-8 border-t-2 border-gray-200 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-bold text-gray-700">TalkNotes</span>
-              </div>
-              <p className="text-xs text-gray-500">
-                AI-Powered Translation & Transcription • {new Date().toLocaleTimeString()}
+            <div style={{ 
+              marginTop: '48px',
+              paddingTop: '24px',
+              borderTop: '2px solid #E5E7EB',
+              textAlign: 'center'
+            }}>
+              <p style={{ fontSize: '12px', color: '#6B7280' }}>
+                Generated by TalkNotes • {new Date().toLocaleString()}
               </p>
             </div>
           </div>
