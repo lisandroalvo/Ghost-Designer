@@ -40,6 +40,38 @@ export default function DocumentExport({ transcript, summary, language, onClose 
   const wordCount = transcript.split(/\s+/).length;
   const readTime = Math.ceil(wordCount / 200);
 
+  // Analyze conversation for pain points and lapses
+  const analyzePainPoints = (text: string): string[] => {
+    const painKeywords = ['problem', 'issue', 'difficult', 'challenge', 'struggle', 'concern', 'worry', 'frustrat', 'confus', 'unclear', 'hard', 'complicate'];
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 15);
+    return sentences
+      .filter(s => painKeywords.some(keyword => s.toLowerCase().includes(keyword)))
+      .slice(0, 4)
+      .map(s => s.trim());
+  };
+
+  const analyzeLapses = (text: string): number => {
+    const shortSentences = text.split(/[.!?]+/).filter(s => s.trim().split(/\s+/).length < 3);
+    return Math.min(Math.floor(shortSentences.length / 3), 5);
+  };
+
+  const calculateComprehension = (): number => {
+    const avgWordLength = transcript.split(/\s+/).reduce((acc, word) => acc + word.length, 0) / wordCount;
+    const sentenceCount = transcript.split(/[.!?]+/).filter(s => s.trim()).length;
+    const avgSentenceLength = wordCount / sentenceCount;
+    
+    let score = 85;
+    if (avgWordLength > 6) score -= 10;
+    if (avgSentenceLength > 25) score -= 10;
+    if (keyPoints.length < 3) score -= 5;
+    
+    return Math.max(60, Math.min(100, score));
+  };
+
+  const painPoints = analyzePainPoints(transcript + ' ' + summary);
+  const conversationLapses = analyzeLapses(transcript);
+  const comprehensionScore = calculateComprehension();
+
   const exportToPDF = async () => {
     if (!documentRef.current) return;
     setIsExporting(true);
@@ -100,8 +132,8 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         {/* Header */}
         <div className="p-6 border-b border-[#3F4448]/50 flex items-center justify-between bg-gradient-to-r from-[#0B0D10] to-[#111418]">
           <div>
-            <h2 className="text-2xl font-bold text-[#F2F3F2]">Export Document</h2>
-            <p className="text-sm text-[#9BA3A0] mt-1">Preview and download your notes</p>
+            <h2 className="text-2xl font-bold text-[#F2F3F2]">Document & Analysis</h2>
+            <p className="text-sm text-[#9BA3A0] mt-1">Review insights, charts, and export your notes</p>
           </div>
           <button
             onClick={onClose}
@@ -172,6 +204,76 @@ export default function DocumentExport({ transcript, summary, language, onClose 
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#8B5CF6' }}>{keyPoints.length}</div>
                 <div style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase' }}>Key Points</div>
               </div>
+            </div>
+
+            {/* Conversation Analysis */}
+            <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '2px solid #E5E7EB' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>📊</span> Conversation Analysis
+              </h2>
+
+              {/* Comprehension Score Chart */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Comprehension Score</span>
+                  <span style={{ fontSize: '18px', fontWeight: 'bold', color: comprehensionScore >= 80 ? '#10B981' : comprehensionScore >= 60 ? '#F59E0B' : '#EF4444' }}>
+                    {comprehensionScore}%
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '24px', backgroundColor: '#E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    width: `${comprehensionScore}%`, 
+                    height: '100%', 
+                    background: comprehensionScore >= 80 ? 'linear-gradient(90deg, #10B981, #059669)' : comprehensionScore >= 60 ? 'linear-gradient(90deg, #F59E0B, #D97706)' : 'linear-gradient(90deg, #EF4444, #DC2626)',
+                    borderRadius: '12px',
+                    transition: 'width 0.3s'
+                  }}></div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
+                  {comprehensionScore >= 80 ? 'Excellent clarity and structure' : comprehensionScore >= 60 ? 'Good clarity with minor complexity' : 'Complex structure may need simplification'}
+                </p>
+              </div>
+
+              {/* Conversation Lapses */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Conversation Lapses</span>
+                  <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#3B82F6' }}>{conversationLapses}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} style={{ 
+                      flex: 1, 
+                      height: '32px', 
+                      backgroundColor: i < conversationLapses ? '#3B82F6' : '#E5E7EB',
+                      borderRadius: '4px'
+                    }}></div>
+                  ))}
+                </div>
+                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
+                  Brief pauses or incomplete thoughts detected
+                </p>
+              </div>
+
+              {/* Pain Points */}
+              {painPoints.length > 0 && (
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚠️</span> Identified Pain Points
+                  </h3>
+                  {painPoints.map((point, idx) => (
+                    <div key={idx} style={{ 
+                      padding: '12px',
+                      marginBottom: '8px',
+                      backgroundColor: '#FEF3C7',
+                      borderLeft: '4px solid #F59E0B',
+                      borderRadius: '4px'
+                    }}>
+                      <p style={{ fontSize: '13px', color: '#78350F', lineHeight: '1.5' }}>{point}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Summary */}
