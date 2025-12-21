@@ -100,14 +100,80 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
     }
 
     const body = await c.req.json();
-    const { transcript } = body;
+    const { transcript, targetLanguage } = body;
 
     if (!transcript || typeof transcript !== 'string') {
       console.log("Summary error: No transcript provided in request");
       return c.json({ error: "No transcript provided" }, 400);
     }
 
-    console.log(`Generating summary for transcript (${transcript.length} chars)...`);
+    const language = typeof targetLanguage === 'string' && targetLanguage.trim().length > 0
+      ? targetLanguage.trim()
+      : null;
+
+    console.log(
+      `Generating summary for transcript (${transcript.length} chars) ` +
+      (language ? `in language: ${language}` : '(original language)')
+    );
+
+    let translatedTranscript = transcript;
+
+    // If a target language is provided, first translate the transcript
+    if (language) {
+      console.log(`Translating transcript to: ${language}`);
+
+      const translateResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a precise translation engine. Translate the user's text into the requested language. " +
+                "Only return the translated text, without explanations, quotes, or additional commentary."
+            },
+            {
+              role: "user",
+              content: `Translate the following transcript into ${language} and return only the translated text:\n\n${transcript}`
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 4000,
+        }),
+      });
+
+      if (!translateResponse.ok) {
+        const errorText = await translateResponse.text();
+        console.log(`OpenAI GPT translation API error (${translateResponse.status}): ${errorText}`);
+        return c.json({ 
+          error: `OpenAI GPT translation API error: ${translateResponse.status} - ${errorText}` 
+        }, 500);
+      }
+
+      const translateData = await translateResponse.json();
+
+      if (!translateData.choices || !translateData.choices[0]?.message?.content) {
+        console.log("GPT translation response missing content:", JSON.stringify(translateData));
+        return c.json({ 
+          error: "Invalid response from GPT translation API - no translated text found" 
+        }, 500);
+      }
+
+      translatedTranscript = translateData.choices[0].message.content;
+      console.log(
+        `Translation successful, translated length: ${translatedTranscript.length} characters`
+      );
+    }
+
+    // Now generate the summary in the same target language (or original if none provided)
+    const summaryPromptLanguagePart = language
+      ? `Write the summary **in ${language}**.`
+      : 'Write the summary in the same language as the transcript.';
 
     const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -120,11 +186,15 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
         messages: [
           {
             role: "system",
-            content: "You are a helpful assistant that creates concise, actionable summaries. Extract the key points and main takeaways from transcripts in clear bullet points."
+            content:
+              "You are a helpful assistant that creates concise, actionable summaries. " +
+              "Extract the key points and main takeaways from transcripts in clear bullet points. " +
+              summaryPromptLanguagePart
           },
           {
             role: "user",
-            content: `Please provide a concise summary of the following transcript with key takeaways as bullet points:\n\n${transcript}`
+            content:
+              `Please provide a concise summary with key takeaways as bullet points for the following transcript:\n\n${translatedTranscript}`
           }
         ],
         temperature: 0.7,
@@ -154,6 +224,7 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
     console.log(`Summary generated successfully, length: ${summary.length} characters`);
 
     return c.json({ 
+      translatedTranscript,
       summary,
       transcriptLength: transcript.length 
     });

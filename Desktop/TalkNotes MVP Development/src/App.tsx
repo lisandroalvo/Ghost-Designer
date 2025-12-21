@@ -12,16 +12,23 @@ export default function App() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [error, setError] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [targetLanguage, setTargetLanguage] = useState('');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<number | null>(null);
+  const websocketRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const [useRealtime, setUseRealtime] = useState(true);
+  const realtimeTranscriptRef = useRef<string>('');
 
   const startRecording = async () => {
     try {
       setError('');
       setTranscript('');
       setSummary('');
+      setLiveTranscript('');
       
       if (!window.isSecureContext) {
         throw new Error('Microphone access requires a secure connection (HTTPS)');
@@ -77,7 +84,17 @@ export default function App() {
         });
         
         console.log(`Recording stopped. Total size: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
-        await transcribeAudio(audioBlob);
+        
+        // If we have a realtime transcript, use it and generate summary
+        if (realtimeTranscriptRef.current && realtimeTranscriptRef.current.length > 0) {
+          console.log('[Realtime] Using realtime transcript for summary');
+          await generateSummary(realtimeTranscriptRef.current);
+          realtimeTranscriptRef.current = '';
+        } else {
+          // Fallback to standard transcription
+          console.log('[Fallback] Using standard transcription');
+          await transcribeAudio(audioBlob);
+        }
       };
 
       mediaRecorder.start(1000);
@@ -88,6 +105,16 @@ export default function App() {
       timerIntervalRef.current = window.setInterval(() => {
         setTimeElapsed(prev => prev + 1);
       }, 1000);
+
+      // Start realtime streaming if enabled
+      if (useRealtime) {
+        try {
+          await startRealtimeStreaming(stream);
+        } catch (realtimeErr) {
+          console.warn('Realtime streaming failed, falling back to standard mode:', realtimeErr);
+          setUseRealtime(false);
+        }
+      }
 
     } catch (err) {
       console.error('Error starting recording:', err);
@@ -142,7 +169,17 @@ export default function App() {
         });
         
         console.log(`Recording stopped. Total size: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
-        await transcribeAudio(audioBlob);
+        
+        // If we have a realtime transcript, use it and generate summary
+        if (realtimeTranscriptRef.current && realtimeTranscriptRef.current.length > 0) {
+          console.log('[Realtime] Using realtime transcript for summary');
+          await generateSummary(realtimeTranscriptRef.current);
+          realtimeTranscriptRef.current = '';
+        } else {
+          // Fallback to standard transcription
+          console.log('[Fallback] Using standard transcription');
+          await transcribeAudio(audioBlob);
+        }
       };
 
       mediaRecorder.start(1000);
@@ -160,10 +197,115 @@ export default function App() {
     }
   };
 
+  const startRealtimeStreaming = async (stream: MediaStream) => {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const ws = new WebSocket('ws://localhost:8787/stream');
+        websocketRef.current = ws;
+
+        ws.onopen = () => {
+          console.log('[Realtime] Connected to gateway');
+          ws.send(JSON.stringify({
+            type: 'start',
+            targetLanguage: targetLanguage.trim() || undefined
+          }));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            
+            if (message.type === 'ready') {
+              console.log('[Realtime] Session ready, streaming audio...');
+              startAudioStreaming(stream, ws);
+              resolve();
+            } else if (message.type === 'transcript.partial') {
+              // Partial updates replace the entire transcript
+              const currentText = message.text || '';
+              setLiveTranscript(currentText);
+              realtimeTranscriptRef.current = currentText;
+            } else if (message.type === 'transcript.delta') {
+              // Delta updates append to the existing transcript
+              const delta = message.text || '';
+              const fullText = message.full || (realtimeTranscriptRef.current + delta);
+              setLiveTranscript(fullText);
+              realtimeTranscriptRef.current = fullText;
+            } else if (message.type === 'transcript.final') {
+              const finalText = message.text || realtimeTranscriptRef.current;
+              realtimeTranscriptRef.current = finalText;
+              setTranscript(finalText);
+              setLiveTranscript('');
+            } else if (message.type === 'error') {
+              console.error('[Realtime] Error:', message.message);
+              reject(new Error(message.message));
+            }
+          } catch (err) {
+            console.error('[Realtime] Failed to parse message:', err);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error('[Realtime] WebSocket error:', err);
+          reject(err);
+        };
+
+        ws.onclose = () => {
+          console.log('[Realtime] WebSocket closed');
+          if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+          }
+        };
+
+        setTimeout(() => reject(new Error('Connection timeout')), 5000);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  const startAudioStreaming = (stream: MediaStream, ws: WebSocket) => {
+    const audioContext = new AudioContext({ sampleRate: 24000 });
+    audioContextRef.current = audioContext;
+    const source = audioContext.createMediaStreamSource(stream);
+    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+    processor.onaudioprocess = (e) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+        }
+        ws.send(pcm16.buffer);
+      }
+    };
+
+    source.connect(processor);
+    processor.connect(audioContext.destination);
+  };
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      // Transfer live transcript to final before stopping
+      const finalRealtimeTranscript = realtimeTranscriptRef.current;
+      if (finalRealtimeTranscript && finalRealtimeTranscript.length > 0) {
+        setTranscript(finalRealtimeTranscript);
+        setLiveTranscript('');
+      }
+      
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      
+      if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+        websocketRef.current.send(JSON.stringify({ type: 'stop' }));
+        websocketRef.current.close();
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
     }
   };
 
@@ -197,6 +339,7 @@ export default function App() {
       console.log('Transcription received:', data);
 
       if (data.transcript) {
+        // Store original transcript first; generateSummary will handle translation
         setTranscript(data.transcript);
         await generateSummary(data.transcript);
       } else {
@@ -225,7 +368,10 @@ export default function App() {
             'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ transcript: transcriptText }),
+          body: JSON.stringify({ 
+            transcript: transcriptText,
+            targetLanguage: targetLanguage.trim() || undefined,
+          }),
         }
       );
 
@@ -236,6 +382,11 @@ export default function App() {
 
       const data = await response.json();
       console.log('Summary received:', data);
+
+      // If backend returned a translated transcript, show that; otherwise keep original
+      if (data.translatedTranscript && typeof data.translatedTranscript === 'string') {
+        setTranscript(data.translatedTranscript);
+      }
 
       if (data.summary) {
         setSummary(data.summary);
@@ -262,6 +413,96 @@ export default function App() {
           onStart={startRecording}
           onStop={stopRecording}
         />
+        <div className="w-full max-w-3xl mx-auto px-8 mt-4 mb-2">
+          <label className="block text-sm text-[#9BA3A0] mb-2 tracking-[0.08em] uppercase">
+            Reading language
+          </label>
+
+          {(() => {
+            const preset = ['English', 'Spanish', 'Portuguese', 'French'];
+            const trimmed = targetLanguage.trim();
+            const selectValue =
+              trimmed === ''
+                ? 'original'
+                : preset.some((l) => l.toLowerCase() === trimmed.toLowerCase())
+                ? trimmed
+                : 'custom';
+
+            return (
+              <>
+                <div className="relative mb-2 inline-block min-w-[220px]">
+                  <select
+                    className="appearance-none w-full bg-[#111418] border border-[#3F4448]/70 rounded-lg px-3 py-2 text-xs text-[#F2F3F2] pr-8 focus:outline-none focus:ring-2 focus:ring-[#87F1C6]/60 focus:border-transparent"
+                    value={selectValue}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === 'original') {
+                        setTargetLanguage('');
+                      } else if (value === 'custom') {
+                        // keep current custom value, or empty for user to type
+                        if (trimmed === '' || preset.some((l) => l.toLowerCase() === trimmed.toLowerCase())) {
+                          setTargetLanguage('');
+                        }
+                      } else {
+                        setTargetLanguage(value);
+                      }
+                    }}
+                  >
+                    <option value="original">Original language</option>
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="Portuguese">Portuguese</option>
+                    <option value="French">French</option>
+                    <option value="custom">Custom…</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-[#3F4448]">
+                    <svg
+                      className="w-3 h-3"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M5 8L10 13L15 8"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                {selectValue === 'custom' && (
+                  <input
+                    type="text"
+                    className="mt-1 w-full bg-[#111418] border border-[#3F4448]/50 rounded-lg px-3 py-2 text-xs text-[#F2F3F2] placeholder:text-[#3F4448] focus:outline-none focus:ring-2 focus:ring-[#87F1C6]/60 focus:border-transparent"
+                    placeholder="Type any language (e.g. Japanese, German, Thai)"
+                    value={targetLanguage}
+                    onChange={(e) => setTargetLanguage(e.target.value)}
+                  />
+                )}
+              </>
+            );
+          })()}
+        </div>
+        
+        {/* Live transcript while recording */}
+        {isRecording && liveTranscript && (
+          <div className="w-full max-w-3xl mx-auto px-8 mt-6">
+            <div className="bg-[#111418] rounded-2xl border border-[#87F1C6]/20 p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-[#87F1C6] animate-pulse"></div>
+                <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
+                  Live Transcript
+                </h3>
+              </div>
+              <p className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em]">
+                {liveTranscript}
+              </p>
+            </div>
+          </div>
+        )}
         
         <TranscriptCard
           transcript={transcript}
