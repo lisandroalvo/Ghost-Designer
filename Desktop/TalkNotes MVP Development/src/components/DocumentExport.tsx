@@ -87,8 +87,10 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         allowTaint: true,
         backgroundColor: '#FFFFFF',
         logging: true,
-        windowWidth: documentRef.current.scrollWidth,
-        windowHeight: documentRef.current.scrollHeight,
+        foreignObjectRendering: true,
+        ignoreElements: (element) => {
+          return false;
+        },
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
@@ -129,8 +131,10 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         allowTaint: true,
         backgroundColor: '#FFFFFF',
         logging: true,
-        windowWidth: documentRef.current.scrollWidth,
-        windowHeight: documentRef.current.scrollHeight,
+        foreignObjectRendering: true,
+        ignoreElements: (element) => {
+          return false;
+        },
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
@@ -188,7 +192,11 @@ export default function DocumentExport({ transcript, summary, language, onClose 
               padding: '48px',
               maxWidth: '800px',
               margin: '0 auto',
-              minHeight: '600px'
+              minHeight: '600px',
+              color: '#000000',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              boxSizing: 'border-box',
+              isolation: 'isolate'
             }}
           >
             {/* Header */}
