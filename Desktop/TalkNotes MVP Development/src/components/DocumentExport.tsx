@@ -108,14 +108,39 @@ export default function DocumentExport({ transcript, summary, language, onClose 
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
       
-      const imgWidth = 210;
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png');
       
       console.log('Adding image to PDF...');
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Check if content fits on one page
+      if (imgHeight <= pageHeight) {
+        // Single page - add normally
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else {
+        // Multi-page - split the image
+        let heightLeft = imgHeight;
+        let position = 0;
+        let pageNumber = 0;
+        
+        while (heightLeft > 0) {
+          if (pageNumber > 0) {
+            pdf.addPage();
+          }
+          
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          position -= pageHeight;
+          pageNumber++;
+        }
+        
+        console.log(`Created ${pageNumber} pages`);
+      }
+      
       pdf.save(`TalkNotes-${new Date().toISOString().split('T')[0]}.pdf`);
       
       console.log('✅ PDF exported successfully');
