@@ -88,21 +88,65 @@ wss.on('connection', (clientWs) => {
         
         // Handle different OpenAI Realtime events
         if (event.type === 'conversation.item.input_audio_transcription.delta') {
-          // Delta update - append to transcript
+          // Delta update - only send to client if NO translation is needed
           const delta = event.delta || '';
-          if (delta) {
+          if (delta && !targetLanguage) {
             partialTranscript += delta;
             clientWs.send(JSON.stringify({
               type: 'transcript.delta',
               text: delta,
               full: partialTranscript,
-              language: targetLanguage || 'original'
+              language: 'original'
             }));
           }
         } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
-          // Completed segment - append with space if needed
+          // Completed segment - translate instantly using Chat API if target language is set
           const transcript = event.transcript || '';
-          if (transcript) {
+          if (transcript && targetLanguage) {
+            console.log('[Realtime Gateway] Translating:', transcript);
+            
+            // Call OpenAI Chat Completions API for instant translation
+            fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                  {
+                    role: 'system',
+                    content: `You are a translator. Translate the following text to ${targetLanguage}. Output ONLY the translation, nothing else.`
+                  },
+                  {
+                    role: 'user',
+                    content: transcript
+                  }
+                ],
+                temperature: 0.3
+              })
+            })
+            .then(res => res.json())
+            .then(data => {
+              const translation = data.choices?.[0]?.message?.content || '';
+              if (translation) {
+                partialTranscript += (partialTranscript ? ' ' : '') + translation;
+                console.log('[Realtime Gateway] Translation:', translation);
+                
+                clientWs.send(JSON.stringify({
+                  type: 'transcript.delta',
+                  text: translation,
+                  full: partialTranscript,
+                  language: targetLanguage
+                }));
+              }
+            })
+            .catch(err => {
+              console.error('[Realtime Gateway] Translation error:', err);
+            });
+          } else if (transcript) {
+            // No translation needed, just accumulate original
             partialTranscript += (partialTranscript ? ' ' : '') + transcript;
             console.log('[Realtime Gateway] Accumulated transcript:', partialTranscript);
             
@@ -110,7 +154,7 @@ wss.on('connection', (clientWs) => {
               type: 'transcript.delta',
               text: transcript,
               full: partialTranscript,
-              language: targetLanguage || 'original'
+              language: 'original'
             }));
           }
         } else if (event.type === 'response.audio_transcript.delta') {
