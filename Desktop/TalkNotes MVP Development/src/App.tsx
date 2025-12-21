@@ -594,15 +594,15 @@ export default function App() {
 
         {/* View Document Button - Show when both transcript and summary are ready */}
         {transcript && summary && !isRecording && !isSummarizing && (
-          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12">
+          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12 flex justify-center">
             <button
               onClick={() => setShowExport(true)}
-              className="w-full py-4 rounded-xl text-sm font-medium bg-gradient-to-r from-[#87F1C6] to-[#4CC9A0] text-[#0B0D10] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-[#87F1C6] to-[#4CC9A0] text-[#0B0D10] hover:opacity-90 transition-opacity flex items-center gap-2 shadow-lg border-2 border-[#87F1C6]"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              View Document & Analysis
+              <span>View Document & Analysis</span>
             </button>
           </div>
         )}
