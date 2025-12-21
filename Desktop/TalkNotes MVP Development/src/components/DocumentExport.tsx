@@ -114,15 +114,12 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         </div>
 
         {/* Document Preview */}
-        <div className="flex-1 overflow-y-auto p-8 bg-[#0B0D10]">
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D10]">
           <div 
             ref={documentRef}
-            className="bg-white rounded-2xl shadow-2xl mx-auto"
+            className="bg-white rounded-xl shadow-2xl mx-auto p-12 max-w-4xl"
             style={{ 
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              width: '210mm',
-              minHeight: '297mm',
-              padding: '60px'
+              fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
           >
             {/* Header Section */}
@@ -140,39 +137,18 @@ export default function DocumentExport({ transcript, summary, language, onClose 
               </div>
               
               {/* Stats Bar */}
-              <div className="flex gap-6 mt-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{wordCount}</div>
-                    <div className="text-xs text-gray-500 uppercase">Words</div>
-                  </div>
+              <div className="grid grid-cols-3 gap-4 mt-6 bg-gray-50 rounded-lg p-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-emerald-600">{wordCount}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wider">Words</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{readTime}</div>
-                    <div className="text-xs text-gray-500 uppercase">Min Read</div>
-                  </div>
+                <div className="text-center border-x border-gray-200">
+                  <div className="text-3xl font-bold text-blue-600">{readTime}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wider">Min Read</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{keyPoints.length}</div>
-                    <div className="text-xs text-gray-500 uppercase">Key Points</div>
-                  </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-600">{keyPoints.length}</div>
+                  <div className="text-xs text-gray-600 uppercase tracking-wider">Key Points</div>
                 </div>
               </div>
             </div>
@@ -193,19 +169,12 @@ export default function DocumentExport({ transcript, summary, language, onClose 
                 </p>
               </div>
 
-              {/* Key Points Grid */}
-              <div className="space-y-4">
+              {/* Key Points List */}
+              <div className="space-y-3">
                 {keyPoints.map((point, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-4 bg-white border-2 border-emerald-200 rounded-xl p-5 hover:shadow-md transition-shadow"
-                  >
-                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <p className="text-gray-700 leading-relaxed flex-1 pt-0.5">{point}</p>
+                  <div key={idx} className="flex items-start gap-3 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded">
+                    <span className="text-emerald-600 font-bold text-lg">✓</span>
+                    <p className="text-gray-700 leading-relaxed">{point}</p>
                   </div>
                 ))}
               </div>
