@@ -88,6 +88,12 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         backgroundColor: '#FFFFFF',
         logging: false,
         foreignObjectRendering: false,
+        onclone: (clonedDoc) => {
+          // Remove all stylesheets and style tags to prevent oklch colors
+          const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styles.forEach(style => style.remove());
+          console.log('Removed', styles.length, 'style elements from clone');
+        },
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
@@ -129,6 +135,12 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         backgroundColor: '#FFFFFF',
         logging: false,
         foreignObjectRendering: false,
+        onclone: (clonedDoc) => {
+          // Remove all stylesheets and style tags to prevent oklch colors
+          const styles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styles.forEach(style => style.remove());
+          console.log('Removed', styles.length, 'style elements from clone');
+        },
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
