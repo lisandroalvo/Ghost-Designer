@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Header } from './components/Header';
 import { ZenControl } from './components/ZenControl';
 import { TranscriptCard } from './components/TranscriptCard';
+import DocumentExport from './components/DocumentExport';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [targetLanguage, setTargetLanguage] = useState('');
+  const [showExport, setShowExport] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -589,6 +591,31 @@ export default function App() {
           isSummarizing={isSummarizing}
           error={error}
         />
+
+        {/* Export Button - Show when both transcript and summary are ready */}
+        {transcript && summary && !isRecording && !isSummarizing && (
+          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12">
+            <button
+              onClick={() => setShowExport(true)}
+              className="w-full py-4 rounded-xl text-sm font-medium bg-gradient-to-r from-[#87F1C6] to-[#4CC9A0] text-[#0B0D10] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Document (PDF / JPG)
+            </button>
+          </div>
+        )}
+
+        {/* Export Modal */}
+        {showExport && (
+          <DocumentExport
+            transcript={transcript}
+            summary={summary}
+            language={targetLanguage || 'Original'}
+            onClose={() => setShowExport(false)}
+          />
+        )}
       </main>
     </div>
   );
