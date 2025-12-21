@@ -86,11 +86,8 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#FFFFFF',
-        logging: true,
-        foreignObjectRendering: true,
-        ignoreElements: (element) => {
-          return false;
-        },
+        logging: false,
+        foreignObjectRendering: false,
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
@@ -130,11 +127,8 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#FFFFFF',
-        logging: true,
-        foreignObjectRendering: true,
-        ignoreElements: (element) => {
-          return false;
-        },
+        logging: false,
+        foreignObjectRendering: false,
       });
 
       console.log('Canvas created:', canvas.width, 'x', canvas.height);
@@ -196,7 +190,10 @@ export default function DocumentExport({ transcript, summary, language, onClose 
               color: '#000000',
               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               boxSizing: 'border-box',
-              isolation: 'isolate'
+              isolation: 'isolate',
+              border: 'none',
+              borderColor: '#E5E7EB',
+              outlineColor: '#E5E7EB'
             }}
           >
             {/* Header */}
