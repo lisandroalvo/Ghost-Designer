@@ -334,7 +334,7 @@ export default function DocumentExport({ transcript, summary, language, onClose 
         <div className="p-6 border-t border-[#3F4448]/50 flex gap-3 justify-end bg-gradient-to-r from-[#0B0D10] to-[#111418]">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-[#9BA3A0] hover:text-[#F2F3F2] border border-[#3F4448] hover:bg-[#3F4448]/30 transition-all"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-[#9BA3A0] hover:text-[#F2F3F2] border border-[#3F4448] hover:border-[#9BA3A0] transition-all"
             disabled={isExporting}
           >
             Cancel
@@ -342,22 +342,24 @@ export default function DocumentExport({ transcript, summary, language, onClose 
           <button
             onClick={exportToJPG}
             disabled={isExporting}
-            className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#2D3139] border-2 border-[#4F5458] text-[#F2F3F2] hover:bg-[#3F4448] transition-all disabled:opacity-50 flex items-center gap-2 shadow-md"
+            className="group relative px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#111418] border border-[#3F4448] hover:border-[#9BA3A0] text-[#F2F3F2] transition-all disabled:opacity-50 flex items-center gap-2 overflow-hidden"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#9BA3A0]/0 via-[#9BA3A0]/10 to-[#9BA3A0]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <svg className="w-4 h-4 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>{isExporting ? 'Exporting...' : 'Export JPG'}</span>
+            <span className="relative z-10">{isExporting ? 'Exporting...' : 'Export JPG'}</span>
           </button>
           <button
             onClick={exportToPDF}
             disabled={isExporting}
-            className="px-5 py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-[#87F1C6] to-[#4CC9A0] text-[#0B0D10] hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg border-2 border-[#87F1C6]"
+            className="group relative px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#111418] border border-[#87F1C6] hover:border-[#6EE7B7] text-[#F2F3F2] transition-all disabled:opacity-50 flex items-center gap-2 overflow-hidden"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#87F1C6]/0 via-[#87F1C6]/10 to-[#87F1C6]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <svg className="w-4 h-4 text-[#87F1C6] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            <span>{isExporting ? 'Exporting...' : 'Export PDF'}</span>
+            <span className="relative z-10">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
           </button>
         </div>
       </div>
