@@ -565,29 +565,161 @@ export default function App() {
           error={error}
         />
 
-        {/* View Document Button - Show when both transcript and summary are ready */}
+        {/* Document & Analysis Accordion - Show when both transcript and summary are ready */}
         {transcript && summary && !isRecording && !isSummarizing && (
-          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12 flex justify-center">
-            <button
-              onClick={() => setShowExport(true)}
-              className="px-8 py-4 rounded-xl text-base font-bold bg-gradient-to-br from-[#10B981] via-[#059669] to-[#047857] hover:from-[#059669] hover:via-[#047857] hover:to-[#065f46] text-white transition-all duration-300 flex items-center gap-3 shadow-[0_4px_20px_rgba(16,185,129,0.4)] hover:shadow-[0_8px_35px_rgba(16,185,129,0.6)] border-2 border-[#34D399]/30 hover:border-[#34D399]/60 transform hover:scale-[1.02]"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>View Document & Analysis</span>
-            </button>
-          </div>
-        )}
+          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12">
+            <div className="document-accordion">
+              <button
+                className="accordion-trigger"
+                onClick={() => setShowExport(!showExport)}
+                type="button"
+              >
+                <svg
+                  className="accordion-icon-left"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <path d="m9 15 2 2 4-4" opacity="0.5" />
+                </svg>
+                <span className="accordion-title">Document & Analysis</span>
+                <svg
+                  className={`accordion-chevron ${showExport ? 'open' : ''}`}
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M4 6l4 4 4-4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
-        {/* Export Modal */}
-        {showExport && (
-          <DocumentExport
-            transcript={transcript}
-            summary={summary}
-            language={targetLanguage || 'Original'}
-            onClose={() => setShowExport(false)}
-          />
+              {showExport && (
+                <div className="accordion-content">
+                  <DocumentExport
+                    transcript={transcript}
+                    summary={summary}
+                    language={targetLanguage || 'Original'}
+                    onClose={() => setShowExport(false)}
+                  />
+                </div>
+              )}
+
+              <style jsx>{`
+                .document-accordion {
+                  width: 100%;
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                }
+
+                .accordion-trigger {
+                  width: 100%;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  padding: 14px 16px;
+                  background: transparent;
+                  border: 1px solid rgba(255, 255, 255, 0.08);
+                  border-radius: 10px;
+                  cursor: pointer;
+                  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+                  color: rgba(255, 255, 255, 0.75);
+                }
+
+                .accordion-trigger:hover {
+                  background: rgba(255, 255, 255, 0.03);
+                  border-color: rgba(52, 201, 143, 0.2);
+                  color: rgba(255, 255, 255, 0.9);
+                }
+
+                .accordion-icon-left {
+                  flex-shrink: 0;
+                  color: rgba(52, 201, 143, 0.6);
+                  transition: color 200ms ease;
+                }
+
+                .accordion-trigger:hover .accordion-icon-left {
+                  color: rgba(52, 201, 143, 0.8);
+                }
+
+                .accordion-title {
+                  flex: 1;
+                  text-align: left;
+                  font-size: 15px;
+                  font-weight: 500;
+                  letter-spacing: -0.01em;
+                }
+
+                .accordion-chevron {
+                  flex-shrink: 0;
+                  color: rgba(255, 255, 255, 0.4);
+                  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+                  margin-left: 8px;
+                }
+
+                .accordion-chevron.open {
+                  transform: rotate(180deg);
+                }
+
+                .accordion-content {
+                  margin-top: 8px;
+                  border-radius: 10px;
+                  border: 1px solid rgba(255, 255, 255, 0.06);
+                  background: rgba(255, 255, 255, 0.02);
+                  animation: accordionSlideDown 280ms cubic-bezier(0.4, 0, 0.2, 1);
+                  overflow: hidden;
+                }
+
+                @keyframes accordionSlideDown {
+                  from {
+                    opacity: 0;
+                    transform: translateY(-8px);
+                  }
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
+                }
+
+                @media (prefers-color-scheme: light) {
+                  .accordion-trigger {
+                    border-color: rgba(0, 0, 0, 0.08);
+                    color: rgba(0, 0, 0, 0.75);
+                  }
+
+                  .accordion-trigger:hover {
+                    background: rgba(0, 0, 0, 0.02);
+                    border-color: rgba(52, 201, 143, 0.25);
+                    color: rgba(0, 0, 0, 0.9);
+                  }
+
+                  .accordion-icon-left {
+                    color: rgba(30, 142, 94, 0.7);
+                  }
+
+                  .accordion-trigger:hover .accordion-icon-left {
+                    color: rgba(30, 142, 94, 0.9);
+                  }
+
+                  .accordion-chevron {
+                    color: rgba(0, 0, 0, 0.4);
+                  }
+
+                  .accordion-content {
+                    border-color: rgba(0, 0, 0, 0.06);
+                    background: rgba(0, 0, 0, 0.01);
+                  }
+                }
+              `}</style>
+            </div>
+          </div>
         )}
       </main>
     </div>
