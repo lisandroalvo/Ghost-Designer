@@ -177,63 +177,131 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
       ? `Write the analysis **in ${language}**.`
       : 'Write the analysis in the same language as the transcript.';
 
-    // Intent-specific prompts for Smart Takeaways
+    // Intent-specific system prompts with strict filtering rules
     const intentPrompts: Record<string, string> = {
-      meeting: `You analyze meeting transcripts. Extract atomic insights using these exact icons:
-🟢 Key decisions made (1 sentence each)
-⚠️ Identified risks or blockers
-📌 Action items assigned
-⏭️ Next steps or follow-ups
-🔴 Disagreements or tensions (if any)
+      meeting: `You are a meeting analysis expert. Your ONLY job is to extract decisions, action items, risks, and next steps.
 
-Focus on decisions, risks, and next steps. Be concise and actionable.`,
+ANALYSIS OBJECTIVE: Track what was decided, who owns what, and what's blocking progress.
+
+FILTERING RULES:
+- ONLY extract information about decisions made, action items assigned, deadlines, risks, blockers, and unresolved items
+- IGNORE casual conversation, general discussion, or background context unless it leads to a decision
+- IGNORE personal anecdotes or stories unless they reveal a blocker or risk
+- Prioritize: decisions > action items > risks > deadlines > unresolved topics
+
+EXTRACTION FORMAT (use these exact icons):
+📌 Decision made: [who decided what]
+⏭️ Action item: [owner] to [specific task] by [deadline if mentioned]
+🔴 Risk/Blocker: [what's blocking progress]
+⚠️ Unresolved: [topic needing follow-up]
+
+Be atomic. One insight = one sentence. No generic summaries.`,
       
-      interview: `You analyze interview transcripts. Extract atomic insights using these exact icons:
-🟢 Key insights or memorable quotes (1 sentence each)
-💡 Candidate strengths or unique perspectives
-🔴 Red flags or concerns (if any)
-⚠️ Unclear responses or assumptions
-📌 Notable skills or experiences mentioned
+      interview: `You are an interview evaluation expert. Your ONLY job is to assess candidate fit through insights, strengths, weaknesses, and red flags.
 
-Focus on insights, quotes, and red flags. Be direct and evaluative.`,
+ANALYSIS OBJECTIVE: Evaluate the candidate's qualifications, thought process, and potential concerns.
+
+FILTERING RULES:
+- ONLY extract insights about the candidate's skills, experience, thinking, strengths, weaknesses, and concerning patterns
+- IGNORE interviewer questions or general pleasantries
+- IGNORE company background or role descriptions unless the candidate responds to them
+- Prioritize: red flags > unique strengths > notable quotes > unclear responses
+
+EXTRACTION FORMAT (use these exact icons):
+💡 Insight: [candidate's key strength or unique perspective]
+🟢 Quote: "[memorable statement]" - reveals [what it shows]
+🔴 Red flag: [concerning behavior, answer, or pattern]
+⚠️ Unclear: [vague response or assumption made]
+
+Be evaluative. Focus on signal, not noise.`,
       
-      sales: `You analyze sales call transcripts. Extract atomic insights using these exact icons:
-🟢 Buying signals detected (1 sentence each)
-🔴 Objections raised by prospect
-⚠️ Pain points mentioned
-💰 Budget or pricing discussions
-⏭️ Suggested next steps
+      sales: `You are a sales call analyzer. Your ONLY job is to identify objections, pain points, buying signals, and next steps.
 
-Focus on objections, pain points, and buying signals. Be sales-focused.`,
+ANALYSIS OBJECTIVE: Understand what's preventing the sale and what's moving it forward.
+
+FILTERING RULES:
+- ONLY extract prospect objections, pain points they mentioned, buying signals, budget discussions, and proposed next steps
+- IGNORE your own pitch, product features, or general small talk
+- IGNORE background context unless it reveals a pain point or objection
+- Prioritize: objections > pain points > buying signals > budget talk > next steps
+
+EXTRACTION FORMAT (use these exact icons):
+🔴 Objection: [prospect's concern or hesitation]
+⚠️ Pain point: [problem they're experiencing]
+🟢 Buying signal: [indication of interest or intent]
+💰 Budget: [pricing discussion or constraint mentioned]
+⏭️ Next step: [agreed follow-up action]
+
+Be sales-focused. Capture deal momentum and friction.`,
       
-      therapy: `You analyze therapy/coaching session transcripts. Extract atomic insights using these exact icons:
-🟢 Key insights or breakthroughs (1 sentence each)
-🔄 Recurring patterns identified
-⚠️ Areas needing attention
-📌 Action items or practices suggested
-💭 Important reflections shared
+      therapy: `You are a coaching session analyzer. Your ONLY job is to identify patterns, emotional shifts, breakthroughs, and action items.
 
-Focus on insights, patterns, and action items. Be supportive and reflective.`,
+ANALYSIS OBJECTIVE: Track recurring themes, insights, and growth opportunities in the client's journey.
+
+FILTERING RULES:
+- ONLY extract client insights, breakthrough moments, recurring patterns, emotional shifts, and suggested practices
+- IGNORE coach questions or general conversation flow
+- IGNORE session logistics or scheduling talk
+- Prioritize: breakthroughs > recurring patterns > action items > areas needing attention
+
+EXTRACTION FORMAT (use these exact icons):
+🟢 Breakthrough: [client realization or shift in perspective]
+🔄 Pattern: [recurring theme or behavior noticed]
+📌 Action item: [practice or step suggested]
+⚠️ Needs attention: [area requiring deeper work]
+
+Be supportive and reflective. Focus on growth and patterns.`,
       
-      lecture: `You analyze lecture transcripts. Extract atomic insights using these exact icons:
-🟢 Core concepts explained (1 sentence each)
-📚 Important definitions or frameworks
-💡 Key examples or case studies
-⚠️ Complex topics needing review
-❓ Questions raised or unclear points
+      lecture: `You are an educational content analyzer. Your ONLY job is to extract key concepts, definitions, examples, and questions.
 
-Focus on key concepts, important points, and clarity. Be educational.`,
+ANALYSIS OBJECTIVE: Capture the core learning content and clarify complex ideas.
+
+FILTERING RULES:
+- ONLY extract core concepts taught, important definitions, illustrative examples, and topics needing clarification
+- IGNORE administrative announcements, off-topic tangents, or class logistics
+- IGNORE student questions unless they reveal something unclear in the material
+- Prioritize: key concepts > definitions > examples > unclear topics
+
+EXTRACTION FORMAT (use these exact icons):
+🟢 Concept: [main idea or principle explained]
+📚 Definition: [term] = [meaning in simple words]
+💡 Example: [case study or illustration used]
+⚠️ Unclear: [complex topic that may need review]
+
+Be educational. Make learning scannable.`,
       
-      casual: `You analyze conversation transcripts. Extract atomic insights using these exact icons:
-🟢 Main topics discussed (1 sentence each)
-💡 Interesting ideas or insights shared
-📌 Things to remember or follow up on
-⏭️ Potential next steps or actions
+      casual: `You are a conversation summarizer. Your ONLY job is to capture memorable moments, key ideas, and things worth remembering.
 
-Focus on main topics and interesting points. Be conversational and friendly.`
+ANALYSIS OBJECTIVE: Remember what matters from natural conversation.
+
+FILTERING RULES:
+- ONLY extract main topics discussed, interesting ideas shared, and things to remember or follow up on
+- IGNORE small talk, greetings, or filler conversation
+- IGNORE logistical details unless they're something to act on
+- Prioritize: memorable moments > key ideas > follow-ups
+
+EXTRACTION FORMAT (use these exact icons):
+🟢 Topic: [main thing discussed]
+💡 Idea: [interesting insight or thought shared]
+📌 Remember: [important mention or detail]
+⏭️ Follow-up: [something to do or revisit]
+
+Be conversational. Capture what matters.`
     };
 
     const intentPrompt = intentPrompts[intent] || intentPrompts['casual'];
+
+    // Mode-specific user instructions
+    const modeInstructions: Record<string, string> = {
+      meeting: `Extract ONLY decisions, action items, risks, and next steps from this meeting transcript. Ignore everything else.`,
+      interview: `Evaluate this candidate based ONLY on their responses, strengths, weaknesses, and red flags. Ignore interviewer questions.`,
+      sales: `Identify ONLY objections, pain points, buying signals, and next steps from this sales call. Ignore your pitch.`,
+      therapy: `Extract ONLY patterns, breakthroughs, and action items from this coaching session. Ignore coach questions.`,
+      lecture: `Capture ONLY key concepts, definitions, examples, and unclear topics from this lecture. Ignore logistics.`,
+      casual: `Remember ONLY the main topics, interesting ideas, and follow-ups from this conversation. Ignore small talk.`
+    };
+
+    const userInstruction = modeInstructions[intent] || modeInstructions['casual'];
 
     const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -249,17 +317,21 @@ Focus on main topics and interesting points. Be conversational and friendly.`
             content:
               intentPrompt + "\n\n" +
               summaryPromptLanguagePart + "\n\n" +
-              "Return ONLY the insights with their icons. No introduction, no conclusion, just the insights. " +
-              "Each insight should be ONE clear sentence maximum. Be atomic and scannable."
+              "CRITICAL INSTRUCTIONS:\n" +
+              "- Return ONLY insights that match your analysis objective\n" +
+              "- Use ONLY the icons specified in your extraction format\n" +
+              "- Do NOT provide generic summaries or overview text\n" +
+              "- Each insight = ONE sentence maximum\n" +
+              "- Filter out ALL irrelevant information\n" +
+              "- NO introduction, NO conclusion, ONLY the extracted insights"
           },
           {
             role: "user",
-            content:
-              `Analyze this ${intent} transcript and provide smart takeaways:\n\n${translatedTranscript}`
+            content: `${userInstruction}\n\nTranscript:\n${translatedTranscript}`
           }
         ],
-        temperature: 0.7,
-        max_tokens: 400,
+        temperature: 0.5,
+        max_tokens: 500,
       }),
     });
 

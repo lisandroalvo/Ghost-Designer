@@ -1,4 +1,5 @@
 import React from 'react';
+import { MeetingIcon, InterviewIcon, SalesIcon, CoachingIcon, LectureIcon, CasualIcon } from './icons';
 
 interface IntentSelectorProps {
   value: 'meeting' | 'interview' | 'sales' | 'therapy' | 'lecture' | 'casual';
@@ -7,31 +8,37 @@ interface IntentSelectorProps {
 }
 
 const intents = [
-  { id: 'meeting', label: 'Meeting', description: 'Track decisions and action items' },
-  { id: 'interview', label: 'Interview', description: 'Capture insights and red flags' },
-  { id: 'sales', label: 'Sales', description: 'Spot objections and buying signals' },
-  { id: 'therapy', label: 'Coaching', description: 'Identify patterns and breakthroughs' },
-  { id: 'lecture', label: 'Lecture', description: 'Extract key concepts and examples' },
-  { id: 'casual', label: 'Casual', description: 'Remember what matters most' },
+  { id: 'meeting', label: 'Meeting', description: 'Track decisions and action items', icon: MeetingIcon },
+  { id: 'interview', label: 'Interview', description: 'Capture insights and red flags', icon: InterviewIcon },
+  { id: 'sales', label: 'Sales', description: 'Spot objections and buying signals', icon: SalesIcon },
+  { id: 'therapy', label: 'Coaching', description: 'Identify patterns and breakthroughs', icon: CoachingIcon },
+  { id: 'lecture', label: 'Lecture', description: 'Extract key concepts and examples', icon: LectureIcon },
+  { id: 'casual', label: 'Casual', description: 'Remember what matters most', icon: CasualIcon },
 ] as const;
 
 export function IntentSelector({ value, onChange, disabled }: IntentSelectorProps) {
   return (
     <div className="intent-selector">
       <div className="intent-grid">
-        {intents.map((intent) => (
-          <button
-            key={intent.id}
-            onClick={() => onChange(intent.id as any)}
-            disabled={disabled}
-            className={`intent-card ${value === intent.id ? 'selected' : ''}`}
-            role="radio"
-            aria-checked={value === intent.id}
-          >
-            <span className="intent-label">{intent.label}</span>
-            <span className="intent-description">{intent.description}</span>
-          </button>
-        ))}
+        {intents.map((intent) => {
+          const Icon = intent.icon;
+          return (
+            <button
+              key={intent.id}
+              onClick={() => onChange(intent.id as any)}
+              disabled={disabled}
+              className={`intent-card ${value === intent.id ? 'selected' : ''}`}
+              role="radio"
+              aria-checked={value === intent.id}
+            >
+              <div className="icon-container">
+                <Icon />
+              </div>
+              <span className="intent-label">{intent.label}</span>
+              <span className="intent-description">{intent.description}</span>
+            </button>
+          );
+        })}
       </div>
       <style jsx>{`
         .intent-selector {
@@ -67,7 +74,7 @@ export function IntentSelector({ value, onChange, disabled }: IntentSelectorProp
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          gap: 6px;
+          gap: 8px;
           padding: 16px;
           background: var(--color-bg-card);
           border: 1px solid var(--color-border-default);
@@ -76,6 +83,27 @@ export function IntentSelector({ value, onChange, disabled }: IntentSelectorProp
           transition: all 120ms ease-out;
           text-align: left;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .icon-container {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.5);
+          filter: drop-shadow(0 0 8px rgba(52, 201, 143, 0.15));
+          margin-bottom: 8px;
+        }
+
+        .icon-container :global(svg) {
+          width: 40px;
+          height: 40px;
+        }
+
+        .intent-card.selected .icon-container {
+          color: var(--color-accent);
+          filter: drop-shadow(0 0 12px rgba(52, 201, 143, 0.25));
         }
 
         .intent-card:hover:not(:disabled) {

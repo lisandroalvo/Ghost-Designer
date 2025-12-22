@@ -4,6 +4,7 @@ import { ZenControl } from './components/ZenControl';
 import { TranscriptCard } from './components/TranscriptCard';
 import DocumentExport from './components/DocumentExport';
 import { IntentSelector } from './components/IntentSelector';
+import { LanguageAccordion } from './components/LanguageAccordion';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 export default function App() {
@@ -517,230 +518,27 @@ export default function App() {
           <label className="language-select-label">
             Output language
           </label>
+          <LanguageAccordion
+            value={targetLanguage}
+            onChange={setTargetLanguage}
+            disabled={isRecording || isTranscribing}
+          />
+          <style jsx>{`
+            .language-select-label {
+              display: block;
+              font-size: 12px;
+              font-weight: 500;
+              color: rgba(255, 255, 255, 0.6);
+              margin-bottom: 8px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            }
 
-          {(() => {
-            const preset = ['English', 'Spanish', 'Portuguese', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Chinese', 'Arabic', 'Russian', 'Hindi', 'Bengali', 'Thai', 'Vietnamese', 'Turkish', 'Polish', 'Dutch', 'Swedish', 'Norwegian', 'Danish', 'Finnish', 'Greek', 'Hebrew', 'Indonesian', 'Malay', 'Filipino', 'Czech', 'Romanian', 'Hungarian', 'Ukrainian', 'Catalan', 'Croatian', 'Serbian', 'Bulgarian', 'Slovak', 'Slovenian', 'Lithuanian', 'Latvian', 'Estonian', 'Icelandic', 'Irish', 'Welsh', 'Basque', 'Galician', 'Albanian', 'Macedonian', 'Bosnian', 'Azerbaijani', 'Georgian', 'Armenian', 'Kazakh', 'Uzbek', 'Mongolian', 'Nepali', 'Sinhala', 'Burmese', 'Khmer', 'Lao', 'Urdu', 'Persian', 'Pashto', 'Kurdish', 'Amharic', 'Swahili', 'Yoruba', 'Igbo', 'Zulu', 'Afrikaans', 'Somali', 'Hausa', 'Oromo', 'Malagasy'];
-            const trimmed = targetLanguage.trim();
-            const selectValue =
-              trimmed === ''
-                ? 'original'
-                : preset.some((l) => l.toLowerCase() === trimmed.toLowerCase())
-                ? trimmed
-                : 'custom';
-
-            return (
-              <>
-                <div className="language-select-wrapper">
-                  <select
-                    className="language-select"
-                    value={selectValue}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === 'original') {
-                        setTargetLanguage('');
-                      } else if (value === 'custom') {
-                        // keep current custom value, or empty for user to type
-                        if (trimmed === '' || preset.some((l) => l.toLowerCase() === trimmed.toLowerCase())) {
-                          setTargetLanguage('');
-                        }
-                      } else {
-                        setTargetLanguage(value);
-                      }
-                    }}
-                  >
-                    <option value="original">Original language</option>
-                    <optgroup label="Popular">
-                      <option value="English">English</option>
-                      <option value="Spanish">Spanish</option>
-                      <option value="French">French</option>
-                      <option value="German">German</option>
-                      <option value="Italian">Italian</option>
-                      <option value="Portuguese">Portuguese</option>
-                      <option value="Chinese">Chinese (Mandarin)</option>
-                      <option value="Japanese">Japanese</option>
-                      <option value="Korean">Korean</option>
-                      <option value="Arabic">Arabic</option>
-                      <option value="Russian">Russian</option>
-                      <option value="Hindi">Hindi</option>
-                    </optgroup>
-                    <optgroup label="Asian">
-                      <option value="Bengali">Bengali</option>
-                      <option value="Thai">Thai</option>
-                      <option value="Vietnamese">Vietnamese</option>
-                      <option value="Indonesian">Indonesian</option>
-                      <option value="Malay">Malay</option>
-                      <option value="Filipino">Filipino (Tagalog)</option>
-                      <option value="Burmese">Burmese</option>
-                      <option value="Khmer">Khmer (Cambodian)</option>
-                      <option value="Lao">Lao</option>
-                      <option value="Nepali">Nepali</option>
-                      <option value="Sinhala">Sinhala</option>
-                      <option value="Urdu">Urdu</option>
-                      <option value="Persian">Persian (Farsi)</option>
-                      <option value="Mongolian">Mongolian</option>
-                    </optgroup>
-                    <optgroup label="European">
-                      <option value="Turkish">Turkish</option>
-                      <option value="Polish">Polish</option>
-                      <option value="Dutch">Dutch</option>
-                      <option value="Swedish">Swedish</option>
-                      <option value="Norwegian">Norwegian</option>
-                      <option value="Danish">Danish</option>
-                      <option value="Finnish">Finnish</option>
-                      <option value="Greek">Greek</option>
-                      <option value="Czech">Czech</option>
-                      <option value="Romanian">Romanian</option>
-                      <option value="Hungarian">Hungarian</option>
-                      <option value="Ukrainian">Ukrainian</option>
-                      <option value="Catalan">Catalan</option>
-                      <option value="Croatian">Croatian</option>
-                      <option value="Serbian">Serbian</option>
-                      <option value="Bulgarian">Bulgarian</option>
-                      <option value="Slovak">Slovak</option>
-                      <option value="Slovenian">Slovenian</option>
-                      <option value="Lithuanian">Lithuanian</option>
-                      <option value="Latvian">Latvian</option>
-                      <option value="Estonian">Estonian</option>
-                      <option value="Icelandic">Icelandic</option>
-                      <option value="Irish">Irish</option>
-                      <option value="Welsh">Welsh</option>
-                      <option value="Basque">Basque</option>
-                      <option value="Galician">Galician</option>
-                      <option value="Albanian">Albanian</option>
-                      <option value="Macedonian">Macedonian</option>
-                      <option value="Bosnian">Bosnian</option>
-                    </optgroup>
-                    <optgroup label="Middle Eastern & Caucasus">
-                      <option value="Hebrew">Hebrew</option>
-                      <option value="Pashto">Pashto</option>
-                      <option value="Kurdish">Kurdish</option>
-                      <option value="Azerbaijani">Azerbaijani</option>
-                      <option value="Georgian">Georgian</option>
-                      <option value="Armenian">Armenian</option>
-                      <option value="Kazakh">Kazakh</option>
-                      <option value="Uzbek">Uzbek</option>
-                    </optgroup>
-                    <optgroup label="African">
-                      <option value="Amharic">Amharic</option>
-                      <option value="Swahili">Swahili</option>
-                      <option value="Yoruba">Yoruba</option>
-                      <option value="Igbo">Igbo</option>
-                      <option value="Zulu">Zulu</option>
-                      <option value="Afrikaans">Afrikaans</option>
-                      <option value="Somali">Somali</option>
-                      <option value="Hausa">Hausa</option>
-                      <option value="Oromo">Oromo</option>
-                      <option value="Malagasy">Malagasy</option>
-                    </optgroup>
-                    <option value="custom">Custom…</option>
-                  </select>
-                  <svg className="language-select__icon" fill="none" viewBox="0 0 20 20" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 8l5 5 5-5" />
-                  </svg>
-                </div>
-
-                {selectValue === 'custom' && (
-                  <input
-                    type="text"
-                    className="language-select language-select--input"
-                    placeholder="Type language name"
-                    value={targetLanguage}
-                    onChange={(e) => setTargetLanguage(e.target.value)}
-                  />
-                )}
-                <style jsx>{`
-                  .language-select-label {
-                    display: block;
-                    font-size: 12px;
-                    font-weight: 500;
-                    color: var(--label-color);
-                    margin-bottom: 8px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                  }
-
-                  .language-select-wrapper {
-                    position: relative;
-                    display: inline-block;
-                    min-width: 220px;
-                  }
-
-                  .language-select {
-                    appearance: none;
-                    width: 100%;
-                    padding: 10px 32px 10px 12px;
-                    font-size: 14px;
-                    font-weight: 400;
-                    color: var(--select-color);
-                    background: var(--select-bg);
-                    border: 1px solid var(--select-border);
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: all 100ms ease-out;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                  }
-
-                  .language-select:hover {
-                    background: var(--select-bg-hover);
-                    border-color: var(--select-border-hover);
-                  }
-
-                  .language-select:focus {
-                    outline: none;
-                    border-color: var(--select-border-focus);
-                    box-shadow: 0 0 0 3px var(--select-ring);
-                  }
-
-                  .language-select--input {
-                    margin-top: 8px;
-                    cursor: text;
-                  }
-
-                  .language-select--input::placeholder {
-                    color: var(--placeholder-color);
-                  }
-
-                  .language-select__icon {
-                    position: absolute;
-                    right: 10px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 16px;
-                    height: 16px;
-                    color: var(--icon-color);
-                    pointer-events: none;
-                  }
-
-                  :root {
-                    --label-color: #9aa0a6;
-                    --select-bg: #13151a;
-                    --select-bg-hover: #1a1d24;
-                    --select-color: #e8eaed;
-                    --select-border: #1f2229;
-                    --select-border-hover: #2d3139;
-                    --select-border-focus: #34c98f;
-                    --select-ring: rgba(52, 201, 143, 0.1);
-                    --icon-color: #9aa0a6;
-                    --placeholder-color: #5f6368;
-                  }
-
-                  @media (prefers-color-scheme: light) {
-                    :root {
-                      --label-color: #5f6368;
-                      --select-bg: #f8f9fa;
-                      --select-bg-hover: #f1f3f4;
-                      --select-color: #202124;
-                      --select-border: #dadce0;
-                      --select-border-hover: #c4c7cc;
-                      --select-border-focus: #1e8e5e;
-                      --select-ring: rgba(30, 142, 94, 0.1);
-                      --icon-color: #5f6368;
-                      --placeholder-color: #9aa0a6;
-                    }
-                  }
-                `}</style>
-              </>
-            );
-          })()}
+            @media (prefers-color-scheme: light) {
+              .language-select-label {
+                color: rgba(0, 0, 0, 0.6);
+              }
+            }
+          `}</style>
         </div>
         
         {/* Live transcript while recording */}
