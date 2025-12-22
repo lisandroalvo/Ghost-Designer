@@ -100,7 +100,7 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
     }
 
     const body = await c.req.json();
-    const { transcript, targetLanguage } = body;
+    const { transcript, targetLanguage, conversationIntent } = body;
 
     if (!transcript || typeof transcript !== 'string') {
       console.log("Summary error: No transcript provided in request");
@@ -110,9 +110,11 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
     const language = typeof targetLanguage === 'string' && targetLanguage.trim().length > 0
       ? targetLanguage.trim()
       : null;
+    
+    const intent = conversationIntent || 'casual';
 
     console.log(
-      `Generating summary for transcript (${transcript.length} chars) ` +
+      `Generating ${intent} summary for transcript (${transcript.length} chars) ` +
       (language ? `in language: ${language}` : '(original language)')
     );
 
@@ -172,8 +174,66 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
 
     // Now generate the summary in the same target language (or original if none provided)
     const summaryPromptLanguagePart = language
-      ? `Write the summary **in ${language}**.`
-      : 'Write the summary in the same language as the transcript.';
+      ? `Write the analysis **in ${language}**.`
+      : 'Write the analysis in the same language as the transcript.';
+
+    // Intent-specific prompts for Smart Takeaways
+    const intentPrompts: Record<string, string> = {
+      meeting: `You analyze meeting transcripts. Extract atomic insights using these exact icons:
+🟢 Key decisions made (1 sentence each)
+⚠️ Identified risks or blockers
+📌 Action items assigned
+⏭️ Next steps or follow-ups
+🔴 Disagreements or tensions (if any)
+
+Focus on decisions, risks, and next steps. Be concise and actionable.`,
+      
+      interview: `You analyze interview transcripts. Extract atomic insights using these exact icons:
+🟢 Key insights or memorable quotes (1 sentence each)
+💡 Candidate strengths or unique perspectives
+🔴 Red flags or concerns (if any)
+⚠️ Unclear responses or assumptions
+📌 Notable skills or experiences mentioned
+
+Focus on insights, quotes, and red flags. Be direct and evaluative.`,
+      
+      sales: `You analyze sales call transcripts. Extract atomic insights using these exact icons:
+🟢 Buying signals detected (1 sentence each)
+🔴 Objections raised by prospect
+⚠️ Pain points mentioned
+💰 Budget or pricing discussions
+⏭️ Suggested next steps
+
+Focus on objections, pain points, and buying signals. Be sales-focused.`,
+      
+      therapy: `You analyze therapy/coaching session transcripts. Extract atomic insights using these exact icons:
+🟢 Key insights or breakthroughs (1 sentence each)
+🔄 Recurring patterns identified
+⚠️ Areas needing attention
+📌 Action items or practices suggested
+💭 Important reflections shared
+
+Focus on insights, patterns, and action items. Be supportive and reflective.`,
+      
+      lecture: `You analyze lecture transcripts. Extract atomic insights using these exact icons:
+🟢 Core concepts explained (1 sentence each)
+📚 Important definitions or frameworks
+💡 Key examples or case studies
+⚠️ Complex topics needing review
+❓ Questions raised or unclear points
+
+Focus on key concepts, important points, and clarity. Be educational.`,
+      
+      casual: `You analyze conversation transcripts. Extract atomic insights using these exact icons:
+🟢 Main topics discussed (1 sentence each)
+💡 Interesting ideas or insights shared
+📌 Things to remember or follow up on
+⏭️ Potential next steps or actions
+
+Focus on main topics and interesting points. Be conversational and friendly.`
+    };
+
+    const intentPrompt = intentPrompts[intent] || intentPrompts['casual'];
 
     const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -187,18 +247,19 @@ app.post("/make-server-b1d03c55/summarize", async (c) => {
           {
             role: "system",
             content:
-              "You are a helpful assistant that creates concise, actionable summaries. " +
-              "Extract the key points and main takeaways from transcripts in clear bullet points. " +
-              summaryPromptLanguagePart
+              intentPrompt + "\n\n" +
+              summaryPromptLanguagePart + "\n\n" +
+              "Return ONLY the insights with their icons. No introduction, no conclusion, just the insights. " +
+              "Each insight should be ONE clear sentence maximum. Be atomic and scannable."
           },
           {
             role: "user",
             content:
-              `Please provide a concise summary with key takeaways as bullet points for the following transcript:\n\n${translatedTranscript}`
+              `Analyze this ${intent} transcript and provide smart takeaways:\n\n${translatedTranscript}`
           }
         ],
         temperature: 0.7,
-        max_tokens: 300,
+        max_tokens: 400,
       }),
     });
 

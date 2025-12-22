@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate TalkNotes Icons</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #0B0D10; 
+            color: #F2F3F2;
+        }
+        canvas { 
+            border: 2px solid #87F1C6; 
+            margin: 10px;
+            border-radius: 8px;
+        }
+        button {
+            background: #87F1C6;
+            color: #0B0D10;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #6EE7B7;
+        }
+        h1 { color: #87F1C6; }
+    </style>
+</head>
+<body>
+    <h1>Generate TalkNotes App Icons</h1>
+    <p>Click the buttons below to download the app icons:</p>
+    
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+    <br>
+    <button onclick="downloadIcon(192)">Download 192x192 Icon</button>
+    <button onclick="downloadIcon(512)">Download 512x512 Icon</button>
+    
+    <script>
+        function drawIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            const scale = size / 192;
+            
+            // Background
+            ctx.fillStyle = '#0B0D10';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Rounded corners
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, [42 * scale]);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Center point
+            const centerX = size / 2;
+            const centerY = size / 2;
+            
+            // Microphone body
+            ctx.fillStyle = '#87F1C6';
+            ctx.beginPath();
+            ctx.roundRect(
+                centerX - 18 * scale, 
+                centerY - 45 * scale, 
+                36 * scale, 
+                50 * scale, 
+                18 * scale
+            );
+            ctx.fill();
+            
+            // Microphone stand arc
+            ctx.strokeStyle = '#87F1C6';
+            ctx.lineWidth = 6 * scale;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + 10 * scale, 25 * scale, 0, Math.PI);
+            ctx.stroke();
+            
+            // Microphone stand vertical line
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY + 35 * scale);
+            ctx.lineTo(centerX, centerY + 50 * scale);
+            ctx.stroke();
+            
+            // Microphone stand base
+            ctx.beginPath();
+            ctx.moveTo(centerX - 15 * scale, centerY + 50 * scale);
+            ctx.lineTo(centerX + 15 * scale, centerY + 50 * scale);
+            ctx.stroke();
+            
+            // Sound waves (left)
+            ctx.lineWidth = 4 * scale;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(centerX - 45 * scale, centerY, 20 * scale, -Math.PI/4, Math.PI/4);
+            ctx.stroke();
+            
+            // Sound waves (right)
+            ctx.beginPath();
+            ctx.arc(centerX + 45 * scale, centerY, 20 * scale, Math.PI * 3/4, Math.PI * 5/4);
+            ctx.stroke();
+            
+            ctx.globalAlpha = 1.0;
+            
+            // Text
+            ctx.fillStyle = '#F2F3F2';
+            ctx.font = `bold ${16 * scale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('TalkNotes', centerX, centerY + 75 * scale);
+        }
+        
+        // Draw both icons on load
+        drawIcon(document.getElementById('canvas192'));
+        drawIcon(document.getElementById('canvas512'));
+        
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

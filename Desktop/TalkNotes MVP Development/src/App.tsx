@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { ZenControl } from './components/ZenControl';
 import { TranscriptCard } from './components/TranscriptCard';
 import DocumentExport from './components/DocumentExport';
+import { IntentSelector } from './components/IntentSelector';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [targetLanguage, setTargetLanguage] = useState('');
   const [showExport, setShowExport] = useState(false);
+  const [conversationIntent, setConversationIntent] = useState<'meeting' | 'interview' | 'sales' | 'therapy' | 'lecture' | 'casual'>('casual');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -26,7 +28,10 @@ export default function App() {
   const websocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
-  const [useRealtime, setUseRealtime] = useState(true);
+  const [useRealtime, setUseRealtime] = useState(
+    // Only enable realtime on localhost
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  );
   const realtimeTranscriptRef = useRef<string>('');
 
   useEffect(() => {
@@ -385,6 +390,7 @@ export default function App() {
           body: JSON.stringify({ 
             transcript: transcriptText,
             targetLanguage: targetLanguage.trim() || undefined,
+            conversationIntent,
           }),
         }
       );
@@ -419,35 +425,87 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-[#0B0D10]' : 'bg-gray-50'}`}>
       <Header />
       
-      {/* Theme Toggle Switch - Large and Visible */}
+      {/* Theme Toggle */}
       <div className="fixed top-24 right-8 z-[9999]">
         <button
           onClick={toggleTheme}
-          className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 shadow-xl ${
-            isDarkMode 
-              ? 'bg-gradient-to-r from-[#111418] to-[#1a1d23] border-2 border-[#87F1C6] hover:border-[#6EE7B7]' 
-              : 'bg-gradient-to-r from-white to-gray-50 border-2 border-gray-400 hover:border-gray-600 shadow-2xl'
+          className={`theme-toggle ${
+            isDarkMode ? 'theme-toggle--dark' : 'theme-toggle--light'
           }`}
+          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {isDarkMode ? (
-            <>
-              <svg className="w-6 h-6 text-[#87F1C6]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <span className="text-[#F2F3F2] font-semibold text-sm">Light Mode</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-              <span className="text-gray-800 font-semibold text-sm">Dark Mode</span>
-            </>
-          )}
+          <svg className="theme-toggle__icon" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            {isDarkMode ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            )}
+          </svg>
+          <span className="theme-toggle__label">Theme</span>
         </button>
+        <style jsx>{`
+          .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--toggle-bg);
+            border: 1px solid var(--toggle-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 100ms ease-out;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+          }
+
+          .theme-toggle:hover {
+            background: var(--toggle-bg-hover);
+            border-color: var(--toggle-border-hover);
+          }
+
+          .theme-toggle--dark {
+            --toggle-bg: #13151a;
+            --toggle-bg-hover: #1a1d24;
+            --toggle-border: #1f2229;
+            --toggle-border-hover: #2d3139;
+            --toggle-color: #9aa0a6;
+            --toggle-icon-color: #9aa0a6;
+          }
+
+          .theme-toggle--light {
+            --toggle-bg: #f8f9fa;
+            --toggle-bg-hover: #f1f3f4;
+            --toggle-border: #dadce0;
+            --toggle-border-hover: #c4c7cc;
+            --toggle-color: #5f6368;
+            --toggle-icon-color: #5f6368;
+          }
+
+          .theme-toggle__icon {
+            width: 16px;
+            height: 16px;
+            color: var(--toggle-icon-color);
+            flex-shrink: 0;
+          }
+
+          .theme-toggle__label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--toggle-color);
+            letter-spacing: -0.005em;
+          }
+        `}</style>
       </div>
       
       <main className="pb-20">
+        {/* Intent Selector - Show when not recording */}
+        {!isRecording && !transcript && (
+          <IntentSelector
+            value={conversationIntent}
+            onChange={setConversationIntent}
+            disabled={isRecording || isTranscribing}
+          />
+        )}
+        
         <ZenControl
           isRecording={isRecording}
           isTranscribing={isTranscribing}
@@ -456,8 +514,8 @@ export default function App() {
           onStop={stopRecording}
         />
         <div className="w-full max-w-3xl mx-auto px-8 mt-4 mb-2">
-          <label className="block text-sm text-[#9BA3A0] mb-2 tracking-[0.08em] uppercase">
-            Reading language
+          <label className="language-select-label">
+            Output language
           </label>
 
           {(() => {
@@ -472,9 +530,9 @@ export default function App() {
 
             return (
               <>
-                <div className="relative mb-2 inline-block min-w-[220px]">
+                <div className="language-select-wrapper">
                   <select
-                    className="appearance-none w-full bg-[#111418] border border-[#3F4448]/70 rounded-lg px-3 py-2 text-xs text-[#F2F3F2] pr-8 focus:outline-none focus:ring-2 focus:ring-[#87F1C6]/60 focus:border-transparent"
+                    className="language-select"
                     value={selectValue}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -576,33 +634,110 @@ export default function App() {
                     </optgroup>
                     <option value="custom">Custom…</option>
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-[#3F4448]">
-                    <svg
-                      className="w-3 h-3"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M5 8L10 13L15 8"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
+                  <svg className="language-select__icon" fill="none" viewBox="0 0 20 20" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 8l5 5 5-5" />
+                  </svg>
                 </div>
 
                 {selectValue === 'custom' && (
                   <input
                     type="text"
-                    className="mt-1 w-full bg-[#111418] border border-[#3F4448]/50 rounded-lg px-3 py-2 text-xs text-[#F2F3F2] placeholder:text-[#3F4448] focus:outline-none focus:ring-2 focus:ring-[#87F1C6]/60 focus:border-transparent"
-                    placeholder="Type any language (e.g. Japanese, German, Thai)"
+                    className="language-select language-select--input"
+                    placeholder="Type language name"
                     value={targetLanguage}
                     onChange={(e) => setTargetLanguage(e.target.value)}
                   />
                 )}
+                <style jsx>{`
+                  .language-select-label {
+                    display: block;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: var(--label-color);
+                    margin-bottom: 8px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                  }
+
+                  .language-select-wrapper {
+                    position: relative;
+                    display: inline-block;
+                    min-width: 220px;
+                  }
+
+                  .language-select {
+                    appearance: none;
+                    width: 100%;
+                    padding: 10px 32px 10px 12px;
+                    font-size: 14px;
+                    font-weight: 400;
+                    color: var(--select-color);
+                    background: var(--select-bg);
+                    border: 1px solid var(--select-border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 100ms ease-out;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                  }
+
+                  .language-select:hover {
+                    background: var(--select-bg-hover);
+                    border-color: var(--select-border-hover);
+                  }
+
+                  .language-select:focus {
+                    outline: none;
+                    border-color: var(--select-border-focus);
+                    box-shadow: 0 0 0 3px var(--select-ring);
+                  }
+
+                  .language-select--input {
+                    margin-top: 8px;
+                    cursor: text;
+                  }
+
+                  .language-select--input::placeholder {
+                    color: var(--placeholder-color);
+                  }
+
+                  .language-select__icon {
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 16px;
+                    height: 16px;
+                    color: var(--icon-color);
+                    pointer-events: none;
+                  }
+
+                  :root {
+                    --label-color: #9aa0a6;
+                    --select-bg: #13151a;
+                    --select-bg-hover: #1a1d24;
+                    --select-color: #e8eaed;
+                    --select-border: #1f2229;
+                    --select-border-hover: #2d3139;
+                    --select-border-focus: #34c98f;
+                    --select-ring: rgba(52, 201, 143, 0.1);
+                    --icon-color: #9aa0a6;
+                    --placeholder-color: #5f6368;
+                  }
+
+                  @media (prefers-color-scheme: light) {
+                    :root {
+                      --label-color: #5f6368;
+                      --select-bg: #f8f9fa;
+                      --select-bg-hover: #f1f3f4;
+                      --select-color: #202124;
+                      --select-border: #dadce0;
+                      --select-border-hover: #c4c7cc;
+                      --select-border-focus: #1e8e5e;
+                      --select-ring: rgba(30, 142, 94, 0.1);
+                      --icon-color: #5f6368;
+                      --placeholder-color: #9aa0a6;
+                    }
+                  }
+                `}</style>
               </>
             );
           })()}
