@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TalkNotes Intent Icons - Wellness Style</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #f5f5f5;
+      padding: 48px 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 300;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      font-weight: 300;
+      margin-bottom: 48px;
+      letter-spacing: 0.3px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 64px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(134, 239, 172, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .icon-container {
+      color: rgba(255, 255, 255, 0.6);
+      filter: drop-shadow(0 0 12px rgba(134, 239, 172, 0.2));
+    }
+
+    .card-content {
+      text-align: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    .card-description {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.6;
+      letter-spacing: 0.2px;
+    }
+
+    .principles {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .principles h2 {
+      font-size: 16px;
+      font-weight: 400;
+      margin-bottom: 20px;
+      letter-spacing: 0.3px;
+    }
+
+    .principles ul {
+      list-style: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 13px;
+      line-height: 2;
+      font-weight: 300;
+    }
+
+    .principles li {
+      padding-left: 24px;
+      position: relative;
+    }
+
+    .principles li:before {
+      content: '•';
+      position: absolute;
+      left: 8px;
+      color: rgba(134, 239, 172, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TalkNotes Intent Icons</h1>
+    <p class="subtitle">Minimal, calm icons inspired by wellness and mindfulness design</p>
+
+    <div class="grid">
+      <!-- Meeting Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            <circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="12" cy="12" r="1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Meeting</h3>
+          <p class="card-description">Concentric circles - centered focus, alignment, convergence</p>
+        </div>
+      </div>
+
+      <!-- Interview Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12C5.5 10 7 9 9 9C11 9 12 10.5 12 12C12 13.5 11 15 9 15C7 15 5.5 14 4 12Z" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <path d="M20 12C18.5 14 17 15 15 15C13 15 12 13.5 12 12C12 10.5 13 9 15 9C17 9 18.5 10 20 12Z" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <line x1="12" y1="6" x2="12" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Interview</h3>
+          <p class="card-description">Balanced duality - two perspectives, dialogue, exchange</p>
+        </div>
+      </div>
+
+      <!-- Sales Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 17C7 15 9 13.5 11 13C13 12.5 15 12.5 17 11C19 9.5 20.5 8 22 6" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
+            <circle cx="7" cy="16" r="1.5" fill="currentColor" opacity="0.3"/>
+            <circle cx="12" cy="13" r="1.5" fill="currentColor" opacity="0.5"/>
+            <circle cx="18" cy="9" r="1.5" fill="currentColor" opacity="0.7"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Sales</h3>
+          <p class="card-description">Gentle growth curve - progress, momentum, ascending</p>
+        </div>
+      </div>
+
+      <!-- Coaching Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 6C12 6 14 8 14 12C14 16 12 18 12 18" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            <path d="M12 6C12 6 10 8 10 12C10 16 12 18 12 18" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            <path d="M12 4C12 4 16 6.5 16 12C16 17.5 12 20 12 20" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+            <path d="M12 4C12 4 8 6.5 8 12C8 17.5 12 20 12 20" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" opacity="0.8"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Coaching</h3>
+          <p class="card-description">Breath waves - expansion, transformation, growth</p>
+        </div>
+      </div>
+
+      <!-- Lecture Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8L18 10L12 12L6 10L12 8Z" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+            <path d="M8 11.5V14.5C8 14.5 9.5 16 12 16C14.5 16 16 14.5 16 14.5V11.5" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
+            <line x1="18" y1="10" x2="18" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Lecture</h3>
+          <p class="card-description">Knowledge flow - sharing, learning, distribution</p>
+        </div>
+      </div>
+
+      <!-- Casual Icon -->
+      <div class="card">
+        <div class="icon-container">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12C4 12 6 10 8 10C10 10 11 11.5 11 12.5C11 13.5 10 15 8 15C6.5 15 5 14 4 13" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
+            <path d="M11 12C11 12 12.5 9 15 9C17 9 18.5 10.5 19 12C19.5 13.5 19 15.5 17 16C15 16.5 13 15 12 14" 
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <circle cx="8" cy="8" r="1" fill="currentColor" opacity="0.3"/>
+            <circle cx="16" cy="7" r="1" fill="currentColor" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">Casual</h3>
+          <p class="card-description">Flowing conversation - organic, natural, spontaneous</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="principles">
+      <h2>Design Principles</h2>
+      <ul>
+        <li>1.5px stroke weight for soft, non-intrusive presence</li>
+        <li>Rounded caps and joins for gentle, flowing aesthetic</li>
+        <li>Layered opacity creates depth without visual weight</li>
+        <li>Abstract metaphors: breath, balance, growth, flow</li>
+        <li>Monochrome with currentColor for contextual adaptation</li>
+        <li>Subtle glow effect with soft green accent (#86efac)</li>
+        <li>Inspired by meditation apps and mindful tech design</li>
+        <li>Icons enhance focus rather than drawing attention</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
