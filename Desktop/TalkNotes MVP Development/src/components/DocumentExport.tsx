@@ -1,20 +1,57 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { generateSmartTitle, getModeLabel, getModeColor, extractModeMetrics } from './ModeMetrics';
+
+type ConversationMode = 'meeting' | 'interview' | 'sales' | 'therapy' | 'lecture' | 'casual';
 
 interface DocumentExportProps {
   transcript: string;
   summary: string;
   language: string;
+  mode: ConversationMode;
   onClose: () => void;
 }
 
-export default function DocumentExport({ transcript, summary, language, onClose }: DocumentExportProps) {
+interface Submetric {
+  label: string;
+  value: string;
+  confidence?: 'Low' | 'Med' | 'High';
+}
+
+interface Metric {
+  id: string;
+  title: string;
+  value: string | number;
+  interpretation: string;
+  submetrics: Submetric[];
+  isPrimary: boolean;
+}
+
+export default function DocumentExport({ transcript, summary, language, mode, onClose }: DocumentExportProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState('');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [expandedMetrics, setExpandedMetrics] = useState<string[]>([]);
   const documentRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
+  // Generate smart title and extract metrics on mount or when data changes
+  useEffect(() => {
+    if (transcript && summary) {
+      const smartTitle = generateSmartTitle(transcript, summary, mode);
+      setDocumentTitle(smartTitle);
+      
+      const metrics = extractModeMetrics(transcript, summary, mode);
+      // Auto-expand first 2 primary metrics
+      const primaryMetrics = metrics.filter(m => m.isPrimary).slice(0, 2);
+      setExpandedMetrics(primaryMetrics.map(m => m.id));
+    }
+  }, [transcript, summary, mode]);
+
+  // Handle click outside for export menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -30,6 +67,14 @@ export default function DocumentExport({ transcript, summary, language, onClose 
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showExportMenu]);
+
+  // Focus title input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   const extractKeyPoints = (summaryText: string): string[] => {
     const lines = summaryText.split('\n').filter(line => line.trim());
@@ -57,6 +102,46 @@ export default function DocumentExport({ transcript, summary, language, onClose 
   const keyPoints = extractKeyPoints(summary);
   const wordCount = transcript.split(/\s+/).length;
   const readTime = Math.ceil(wordCount / 200);
+  const metrics = extractModeMetrics(transcript, summary, mode);
+  
+  const toggleMetric = (id: string) => {
+    setExpandedMetrics(prev => 
+      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+    );
+  };
+  
+  const handleTitleEdit = () => {
+    setIsEditingTitle(true);
+  };
+  
+  const handleTitleSave = () => {
+    setIsEditingTitle(false);
+    if (!documentTitle.trim()) {
+      setDocumentTitle(generateSmartTitle(transcript, summary, mode));
+    }
+  };
+  
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      setDocumentTitle(generateSmartTitle(transcript, summary, mode));
+      setIsEditingTitle(false);
+    }
+  };
+  
+  const getLanguageFlag = (lang: string): string => {
+    const flags: Record<string, string> = {
+      'English': '🇬🇧',
+      'Spanish': '🇪🇸',
+      'French': '🇫🇷',
+      'German': '🇩🇪',
+      'Italian': '🇮🇹',
+      'Portuguese': '🇵🇹',
+      'Original': '🌐'
+    };
+    return flags[lang] || '🌐';
+  }
 
   // Analyze conversation for pain points and lapses
   const analyzePainPoints = (text: string): string[] => {
@@ -363,28 +448,104 @@ export default function DocumentExport({ transcript, summary, language, onClose 
               outlineColor: '#E5E7EB'
             }}
           >
-            {/* Header */}
+            {/* Editable Title + Chips */}
             <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '2px solid #E5E7EB' }}>
-              <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
-                TalkNotes
-              </h1>
-              <p style={{ fontSize: '14px', color: '#6B7280' }}>
-                {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
-              {language && language !== 'Original' && (
-                <div style={{ 
-                  display: 'inline-block', 
-                  marginTop: '16px',
-                  padding: '8px 16px', 
-                  backgroundColor: '#10B981', 
-                  color: 'white', 
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}>
-                  {language}
+              {!isEditingTitle ? (
+                <div 
+                  onClick={handleTitleEdit}
+                  style={{ 
+                    fontSize: '32px', 
+                    fontWeight: 'bold', 
+                    color: '#111827', 
+                    marginBottom: '16px',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  {documentTitle || 'Click to edit title'}
                 </div>
+              ) : (
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  value={documentTitle}
+                  onChange={(e) => setDocumentTitle(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={handleTitleKeyDown}
+                  style={{
+                    fontSize: '32px',
+                    fontWeight: 'bold',
+                    color: '#111827',
+                    marginBottom: '16px',
+                    width: '100%',
+                    border: '2px solid #3B82F6',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
               )}
+              
+              {/* Chips Row */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {/* Mode Chip */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  backgroundColor: getModeColor(mode) + '15',
+                  border: `1.5px solid ${getModeColor(mode)}`,
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: getModeColor(mode)
+                }}>
+                  <span style={{ fontSize: '14px' }}>
+                    {mode === 'meeting' ? '📋' : mode === 'interview' ? '💼' : mode === 'sales' ? '💰' : mode === 'therapy' ? '🧠' : mode === 'lecture' ? '🎓' : '💬'}
+                  </span>
+                  {getModeLabel(mode)}
+                </div>
+
+                {/* Language Chip */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  backgroundColor: '#F3F4F6',
+                  border: '1.5px solid #D1D5DB',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  <span>{getLanguageFlag(language)}</span>
+                  {language || 'Original'}
+                </div>
+
+                {/* Date Chip */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  backgroundColor: '#F3F4F6',
+                  border: '1.5px solid #D1D5DB',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  color: '#6B7280'
+                }}>
+                  <span>📅</span>
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+              </div>
             </div>
 
             {/* Stats */}
@@ -411,74 +572,151 @@ export default function DocumentExport({ transcript, summary, language, onClose 
               </div>
             </div>
 
-            {/* Conversation Analysis */}
-            <div style={{ marginBottom: '32px', padding: '24px', backgroundColor: '#FAFAFA', borderRadius: '12px', border: '2px solid #E5E7EB' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '20px' }}>📊</span> Conversation Analysis
+            {/* Mode-Specific Key Metrics */}
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>📊</span> Key Metrics
               </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '20px' }}>
+                {getModeLabel(mode)}-specific insights from your conversation
+              </p>
 
-              {/* Comprehension Score Chart */}
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Comprehension Score</span>
-                  <span style={{ fontSize: '18px', fontWeight: 'bold', color: comprehensionScore >= 80 ? '#10B981' : comprehensionScore >= 60 ? '#F59E0B' : '#EF4444' }}>
-                    {comprehensionScore}%
-                  </span>
-                </div>
-                <div style={{ width: '100%', height: '24px', backgroundColor: '#E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
-                  <div style={{ 
-                    width: `${comprehensionScore}%`, 
-                    height: '100%', 
-                    background: comprehensionScore >= 80 ? 'linear-gradient(90deg, #10B981, #059669)' : comprehensionScore >= 60 ? 'linear-gradient(90deg, #F59E0B, #D97706)' : 'linear-gradient(90deg, #EF4444, #DC2626)',
-                    borderRadius: '12px',
-                    transition: 'width 0.3s'
-                  }}></div>
-                </div>
-                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                  {comprehensionScore >= 80 ? 'Excellent clarity and structure' : comprehensionScore >= 60 ? 'Good clarity with minor complexity' : 'Complex structure may need simplification'}
-                </p>
-              </div>
+              {metrics.map((metric, idx) => {
+                const isExpanded = expandedMetrics.includes(metric.id);
+                const bgColor = metric.isPrimary ? '#F0FDF4' : '#F9FAFB';
+                const borderColor = metric.isPrimary ? '#10B981' : '#E5E7EB';
+                const accentColor = metric.isPrimary ? '#10B981' : '#6B7280';
 
-              {/* Conversation Lapses */}
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>Conversation Lapses</span>
-                  <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#3B82F6' }}>{conversationLapses}</span>
-                </div>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} style={{ 
-                      flex: 1, 
-                      height: '32px', 
-                      backgroundColor: i < conversationLapses ? '#3B82F6' : '#E5E7EB',
-                      borderRadius: '4px'
-                    }}></div>
-                  ))}
-                </div>
-                <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
-                  Brief pauses or incomplete thoughts detected
-                </p>
-              </div>
+                return (
+                  <div 
+                    key={metric.id}
+                    style={{ 
+                      marginBottom: '12px',
+                      border: `2px solid ${borderColor}`,
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      backgroundColor: bgColor,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {/* Metric Header */}
+                    <div 
+                      onClick={() => toggleMetric(metric.id)}
+                      style={{ 
+                        padding: '16px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        userSelect: 'none'
+                      }}
+                    >
+                      {/* Expand Icon */}
+                      <svg 
+                        style={{ 
+                          width: '20px', 
+                          height: '20px', 
+                          color: accentColor,
+                          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s'
+                        }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
 
-              {/* Pain Points */}
-              {painPoints.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>⚠️</span> Identified Pain Points
-                  </h3>
-                  {painPoints.map((point, idx) => (
-                    <div key={idx} style={{ 
-                      padding: '12px',
-                      marginBottom: '8px',
-                      backgroundColor: '#FEF3C7',
-                      borderLeft: '4px solid #F59E0B',
-                      borderRadius: '4px'
-                    }}>
-                      <p style={{ fontSize: '13px', color: '#78350F', lineHeight: '1.5' }}>{point}</p>
+                      {/* Metric Info */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
+                            {metric.title}
+                          </h3>
+                          {metric.isPrimary && (
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              color: '#10B981',
+                              backgroundColor: '#D1FAE5',
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Most Relevant
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                          {metric.interpretation}
+                        </p>
+                      </div>
+
+                      {/* Value Badge */}
+                      <div style={{
+                        minWidth: '48px',
+                        height: '48px',
+                        borderRadius: '10px',
+                        backgroundColor: '#FFFFFF',
+                        border: `2px solid ${accentColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: accentColor
+                      }}>
+                        {metric.value}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    {/* Expanded Content */}
+                    {isExpanded && metric.submetrics.length > 0 && (
+                      <div style={{ 
+                        padding: '0 16px 16px 16px',
+                        borderTop: `1px solid ${borderColor}`
+                      }}>
+                        <div style={{ paddingTop: '16px' }}>
+                          {metric.submetrics.map((sub, subIdx) => (
+                            <div 
+                              key={subIdx}
+                              style={{
+                                padding: '12px',
+                                marginBottom: '8px',
+                                backgroundColor: '#FFFFFF',
+                                borderRadius: '8px',
+                                border: '1px solid #E5E7EB'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  {sub.label}
+                                </span>
+                                {sub.confidence && (
+                                  <span style={{
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px',
+                                    backgroundColor: sub.confidence === 'High' ? '#D1FAE5' : sub.confidence === 'Med' ? '#FEF3C7' : '#FEE2E2',
+                                    color: sub.confidence === 'High' ? '#10B981' : sub.confidence === 'Med' ? '#F59E0B' : '#EF4444'
+                                  }}>
+                                    {sub.confidence}
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.5', margin: 0 }}>
+                                {sub.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Key Takeaways - Only green checkmarks */}

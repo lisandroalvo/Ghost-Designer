@@ -551,6 +551,7 @@ export default function App() {
                   transcript={transcript}
                   summary={summary}
                   language={targetLanguage || 'Original'}
+                  mode={conversationIntent}
                   onClose={() => {}}
                 />
               </div>
@@ -584,6 +585,7 @@ export default function App() {
                     transcript={transcript}
                     summary={summary}
                     language={targetLanguage || 'Original'}
+                    mode={conversationIntent}
                     onClose={() => {}}
                   />
                 </div>
