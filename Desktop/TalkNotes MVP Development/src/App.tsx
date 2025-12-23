@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Header } from './components/Header';
+import { AppShell } from './components/AppShell';
 import { ZenControl } from './components/ZenControl';
 import { TranscriptCard } from './components/TranscriptCard';
 import DocumentExport from './components/DocumentExport';
@@ -8,6 +8,7 @@ import { LanguageAccordion } from './components/LanguageAccordion';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
 type SessionState = 'idle' | 'recording' | 'processing' | 'results';
+type Tab = 'record' | 'transcript' | 'analysis' | 'export';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -25,6 +26,7 @@ export default function App() {
   const [targetLanguage, setTargetLanguage] = useState('');
   const [showExport, setShowExport] = useState(false);
   const [conversationIntent, setConversationIntent] = useState<'meeting' | 'interview' | 'sales' | 'therapy' | 'lecture' | 'casual'>('casual');
+  const [activeTab, setActiveTab] = useState<Tab>('record');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -56,6 +58,7 @@ export default function App() {
     setLiveTranscript('');
     realtimeTranscriptRef.current = '';
     audioChunksRef.current = [];
+    setActiveTab('record');
   };
 
   const startRecording = async () => {
@@ -441,385 +444,326 @@ export default function App() {
     }
   };
 
-  return (
-    <div className={`min-h-screen transition-colors duration-500 ${isDarkMode ? 'bg-[#0B0D10]' : 'bg-gray-50'}`}>
-      <Header />
-      
-      {/* Theme Toggle */}
-      <div className="fixed top-24 right-8 z-[9999]">
-        <button
-          onClick={toggleTheme}
-          className={`theme-toggle ${
-            isDarkMode ? 'theme-toggle--dark' : 'theme-toggle--light'
-          }`}
-          aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          <svg className="theme-toggle__icon" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-            {isDarkMode ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-            )}
-          </svg>
-          <span className="theme-toggle__label">Theme</span>
-        </button>
-        <style jsx>{`
-          .theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: var(--toggle-bg);
-            border: 1px solid var(--toggle-border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 100ms ease-out;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-          }
-
-          .theme-toggle:hover {
-            background: var(--toggle-bg-hover);
-            border-color: var(--toggle-border-hover);
-          }
-
-          .theme-toggle--dark {
-            --toggle-bg: #13151a;
-            --toggle-bg-hover: #1a1d24;
-            --toggle-border: #1f2229;
-            --toggle-border-hover: #2d3139;
-            --toggle-color: #9aa0a6;
-            --toggle-icon-color: #9aa0a6;
-          }
-
-          .theme-toggle--light {
-            --toggle-bg: #f8f9fa;
-            --toggle-bg-hover: #f1f3f4;
-            --toggle-border: #dadce0;
-            --toggle-border-hover: #c4c7cc;
-            --toggle-color: #5f6368;
-            --toggle-icon-color: #5f6368;
-          }
-
-          .theme-toggle__icon {
-            width: 16px;
-            height: 16px;
-            color: var(--toggle-icon-color);
-            flex-shrink: 0;
-          }
-
-          .theme-toggle__label {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--toggle-color);
-            letter-spacing: -0.005em;
-          }
-        `}</style>
-      </div>
-      
-      <main className="pb-20">
-        {/* Intent Selector - Always show in idle state */}
-        {sessionState === 'idle' && (
-          <IntentSelector
-            value={conversationIntent}
-            onChange={setConversationIntent}
-            disabled={false}
-          />
-        )}
-        
-        <ZenControl
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          timeElapsed={timeElapsed}
-          onStart={startRecording}
-          onStop={stopRecording}
-        />
-        <div className="w-full max-w-3xl mx-auto px-8 mt-4 mb-2">
-          <label className="language-select-label">
-            Output language
-          </label>
-          <LanguageAccordion
-            value={targetLanguage}
-            onChange={setTargetLanguage}
-            disabled={isRecording || isTranscribing}
-          />
-          <style jsx>{`
-            .language-select-label {
-              display: block;
-              font-size: 12px;
-              font-weight: 500;
-              color: rgba(255, 255, 255, 0.6);
-              margin-bottom: 8px;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            }
-
-            @media (prefers-color-scheme: light) {
-              .language-select-label {
-                color: rgba(0, 0, 0, 0.6);
-              }
-            }
-          `}</style>
-        </div>
-        
-        {/* Live transcript while recording */}
-        {isRecording && liveTranscript && (
-          <div className="w-full max-w-3xl mx-auto px-8 mt-6">
-            <div className="bg-[#111418] rounded-2xl border border-[#87F1C6]/20 p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[#87F1C6] animate-pulse"></div>
-                <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
-                  Live Transcript
-                </h3>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'record':
+        return (
+          <div className="tab-panel">
+            {sessionState === 'idle' && (
+              <div className="section">
+                <IntentSelector
+                  value={conversationIntent}
+                  onChange={setConversationIntent}
+                  disabled={false}
+                />
               </div>
-              <p className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em]">
-                {liveTranscript}
-              </p>
+            )}
+            
+            <div className="section">
+              <div className="w-full max-w-3xl mx-auto px-8 mt-4 mb-2">
+                <label className="language-select-label">
+                  Output language
+                </label>
+                <LanguageAccordion
+                  value={targetLanguage}
+                  onChange={setTargetLanguage}
+                  disabled={isRecording || isTranscribing}
+                />
+              </div>
             </div>
+
+            <div className="section">
+              <ZenControl
+                isRecording={isRecording}
+                isTranscribing={isTranscribing}
+                timeElapsed={timeElapsed}
+                onStart={startRecording}
+                onStop={stopRecording}
+              />
+            </div>
+
+            {isRecording && liveTranscript && (
+              <div className="section">
+                <div className="w-full max-w-3xl mx-auto px-8">
+                  <div className="bg-[#111418] rounded-2xl border border-[#87F1C6]/20 p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2 h-2 rounded-full bg-[#87F1C6] animate-pulse"></div>
+                      <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
+                        Live Transcript
+                      </h3>
+                    </div>
+                    <p className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em]">
+                      {liveTranscript}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sessionState === 'results' && (
+              <div className="section">
+                <div className="w-full max-w-3xl mx-auto px-8 mt-6 flex justify-center">
+                  <button
+                    onClick={resetSession}
+                    className="new-recording-button"
+                    type="button"
+                  >
+                    <svg
+                      className="new-recording-icon"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    <span>New Recording</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        
-        <TranscriptCard
-          transcript={transcript}
-          summary={summary}
-          isSummarizing={isSummarizing}
-          error={error}
-        />
+        );
 
-        {/* Document & Analysis Accordion - Show when both transcript and summary are ready */}
-        {transcript && summary && !isRecording && !isSummarizing && (
-          <div className="w-full max-w-3xl mx-auto px-8 mt-6 mb-12">
-            <div className="document-accordion">
-              <button
-                className="accordion-trigger"
-                onClick={() => setShowExport(!showExport)}
-                type="button"
-              >
-                <svg
-                  className="accordion-icon-left"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <path d="m9 15 2 2 4-4" opacity="0.5" />
-                </svg>
-                <span className="accordion-title">Document & Analysis</span>
-                <svg
-                  className={`accordion-chevron ${showExport ? 'open' : ''}`}
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path d="M4 6l4 4 4-4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+      case 'transcript':
+        return (
+          <div className="tab-panel">
+            <TranscriptCard
+              transcript={transcript}
+              summary={summary}
+              isSummarizing={isSummarizing}
+              error={error}
+            />
+          </div>
+        );
 
-              {showExport && (
-                <div className="accordion-content">
+      case 'analysis':
+        return (
+          <div className="tab-panel">
+            {transcript && summary && !isRecording && !isSummarizing && (
+              <div className="w-full max-w-4xl mx-auto px-8 py-6">
+                <DocumentExport
+                  transcript={transcript}
+                  summary={summary}
+                  language={targetLanguage || 'Original'}
+                  onClose={() => {}}
+                />
+              </div>
+            )}
+            {(!transcript || !summary) && (
+              <div className="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                <h3>No Analysis Yet</h3>
+                <p>Complete a recording to see your analysis here</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'export':
+        return (
+          <div className="tab-panel">
+            {transcript && summary && (
+              <div className="w-full max-w-4xl mx-auto px-8 py-6">
+                <div className="export-panel">
+                  <h2 className="export-title">Export Document</h2>
+                  <p className="export-description">
+                    Download your transcript and analysis as a professional document
+                  </p>
+                  
                   <DocumentExport
                     transcript={transcript}
                     summary={summary}
                     language={targetLanguage || 'Original'}
-                    onClose={() => setShowExport(false)}
+                    onClose={() => {}}
                   />
                 </div>
-              )}
-
-              <style jsx>{`
-                .document-accordion {
-                  width: 100%;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                }
-
-                .accordion-trigger {
-                  width: 100%;
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-                  padding: 14px 16px;
-                  background: transparent;
-                  border: 1px solid rgba(255, 255, 255, 0.08);
-                  border-radius: 10px;
-                  cursor: pointer;
-                  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-                  color: rgba(255, 255, 255, 0.75);
-                }
-
-                .accordion-trigger:hover {
-                  background: rgba(255, 255, 255, 0.03);
-                  border-color: rgba(52, 201, 143, 0.2);
-                  color: rgba(255, 255, 255, 0.9);
-                }
-
-                .accordion-icon-left {
-                  flex-shrink: 0;
-                  color: rgba(52, 201, 143, 0.6);
-                  transition: color 200ms ease;
-                }
-
-                .accordion-trigger:hover .accordion-icon-left {
-                  color: rgba(52, 201, 143, 0.8);
-                }
-
-                .accordion-title {
-                  flex: 1;
-                  text-align: left;
-                  font-size: 15px;
-                  font-weight: 500;
-                  letter-spacing: -0.01em;
-                }
-
-                .accordion-chevron {
-                  flex-shrink: 0;
-                  color: rgba(255, 255, 255, 0.4);
-                  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
-                  margin-left: 8px;
-                }
-
-                .accordion-chevron.open {
-                  transform: rotate(180deg);
-                }
-
-                .accordion-content {
-                  margin-top: 8px;
-                  border-radius: 10px;
-                  border: 1px solid rgba(255, 255, 255, 0.06);
-                  background: rgba(255, 255, 255, 0.02);
-                  animation: accordionSlideDown 280ms cubic-bezier(0.4, 0, 0.2, 1);
-                  overflow: visible;
-                }
-
-                @keyframes accordionSlideDown {
-                  from {
-                    opacity: 0;
-                    transform: translateY(-8px);
-                  }
-                  to {
-                    opacity: 1;
-                    transform: translateY(0);
-                  }
-                }
-
-                @media (prefers-color-scheme: light) {
-                  .accordion-trigger {
-                    border-color: rgba(0, 0, 0, 0.08);
-                    color: rgba(0, 0, 0, 0.75);
-                  }
-
-                  .accordion-trigger:hover {
-                    background: rgba(0, 0, 0, 0.02);
-                    border-color: rgba(52, 201, 143, 0.25);
-                    color: rgba(0, 0, 0, 0.9);
-                  }
-
-                  .accordion-icon-left {
-                    color: rgba(30, 142, 94, 0.7);
-                  }
-
-                  .accordion-trigger:hover .accordion-icon-left {
-                    color: rgba(30, 142, 94, 0.9);
-                  }
-
-                  .accordion-chevron {
-                    color: rgba(0, 0, 0, 0.4);
-                  }
-
-                  .accordion-content {
-                    border-color: rgba(0, 0, 0, 0.06);
-                    background: rgba(0, 0, 0, 0.01);
-                  }
-                }
-              `}</style>
-            </div>
-
-            {/* New Recording Button - Show in results state */}
-            {sessionState === 'results' && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={resetSession}
-                  className="new-recording-button"
-                  type="button"
-                >
-                  <svg
-                    className="new-recording-icon"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="23 4 23 10 17 10" />
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                  </svg>
-                  <span>New Recording</span>
-                </button>
-
-                <style jsx>{`
-                  .new-recording-button {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    padding: 14px 24px;
-                    background: transparent;
-                    border: 1px solid rgba(52, 201, 143, 0.3);
-                    border-radius: 12px;
-                    color: rgba(52, 201, 143, 0.9);
-                    font-size: 15px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                    letter-spacing: -0.01em;
-                  }
-
-                  .new-recording-button:hover {
-                    background: rgba(52, 201, 143, 0.08);
-                    border-color: rgba(52, 201, 143, 0.5);
-                    color: rgba(52, 201, 143, 1);
-                    transform: translateY(-1px);
-                  }
-
-                  .new-recording-button:active {
-                    transform: translateY(0);
-                  }
-
-                  .new-recording-icon {
-                    flex-shrink: 0;
-                    transition: transform 200ms ease;
-                  }
-
-                  .new-recording-button:hover .new-recording-icon {
-                    transform: rotate(-15deg);
-                  }
-
-                  @media (prefers-color-scheme: light) {
-                    .new-recording-button {
-                      border-color: rgba(30, 142, 94, 0.3);
-                      color: rgba(30, 142, 94, 0.9);
-                    }
-
-                    .new-recording-button:hover {
-                      background: rgba(30, 142, 94, 0.08);
-                      border-color: rgba(30, 142, 94, 0.5);
-                      color: rgba(30, 142, 94, 1);
-                    }
-                  }
-                `}</style>
+              </div>
+            )}
+            {(!transcript || !summary) && (
+              <div className="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                <h3>No Content to Export</h3>
+                <p>Complete a recording to export your document</p>
               </div>
             )}
           </div>
-        )}
-      </main>
-    </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <AppShell
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      isDarkMode={isDarkMode}
+      onToggleTheme={toggleTheme}
+      sessionState={sessionState}
+    >
+      {renderTabContent()}
+
+      <style jsx>{`
+        .tab-panel {
+          height: 100%;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .section {
+          margin-bottom: 24px;
+        }
+
+        .language-select-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: 8px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .new-recording-button {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 14px 24px;
+          background: transparent;
+          border: 1px solid rgba(52, 201, 143, 0.3);
+          border-radius: 12px;
+          color: rgba(52, 201, 143, 0.9);
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+          letter-spacing: -0.01em;
+        }
+
+        .new-recording-button:hover {
+          background: rgba(52, 201, 143, 0.08);
+          border-color: rgba(52, 201, 143, 0.5);
+          color: rgba(52, 201, 143, 1);
+          transform: translateY(-1px);
+        }
+
+        .new-recording-button:active {
+          transform: translateY(0);
+        }
+
+        .new-recording-icon {
+          flex-shrink: 0;
+          transition: transform 200ms ease;
+        }
+
+        .new-recording-button:hover .new-recording-icon {
+          transform: rotate(-15deg);
+        }
+
+        .export-panel {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 32px;
+        }
+
+        .export-title {
+          font-size: 24px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          margin-bottom: 8px;
+        }
+
+        .export-description {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: 32px;
+        }
+
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 80px 24px;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state svg {
+          margin-bottom: 24px;
+          opacity: 0.4;
+        }
+
+        .empty-state h3 {
+          font-size: 18px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.7);
+          margin-bottom: 8px;
+        }
+
+        .empty-state p {
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (prefers-color-scheme: light) {
+          .language-select-label {
+            color: rgba(0, 0, 0, 0.6);
+          }
+
+          .new-recording-button {
+            border-color: rgba(30, 142, 94, 0.3);
+            color: rgba(30, 142, 94, 0.9);
+          }
+
+          .new-recording-button:hover {
+            background: rgba(30, 142, 94, 0.08);
+            border-color: rgba(30, 142, 94, 0.5);
+            color: rgba(30, 142, 94, 1);
+          }
+
+          .export-panel {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.08);
+          }
+
+          .export-title {
+            color: rgba(0, 0, 0, 0.9);
+          }
+
+          .export-description {
+            color: rgba(0, 0, 0, 0.6);
+          }
+
+          .empty-state {
+            color: rgba(0, 0, 0, 0.5);
+          }
+
+          .empty-state h3 {
+            color: rgba(0, 0, 0, 0.7);
+          }
+
+          .empty-state p {
+            color: rgba(0, 0, 0, 0.5);
+          }
+        }
+      `}</style>
+    </AppShell>
   );
 }
