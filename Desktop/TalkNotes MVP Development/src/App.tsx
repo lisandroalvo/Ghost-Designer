@@ -7,11 +7,14 @@ import { IntentSelector } from './components/IntentSelector';
 import { LanguageAccordion } from './components/LanguageAccordion';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
+type SessionState = 'idle' | 'recording' | 'processing' | 'results';
+
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('talknotes-theme');
     return saved ? saved === 'dark' : true;
   });
+  const [sessionState, setSessionState] = useState<SessionState>('idle');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -43,8 +46,21 @@ export default function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  const resetSession = () => {
+    setSessionState('idle');
+    setTranscript('');
+    setSummary('');
+    setError('');
+    setTimeElapsed(0);
+    setShowExport(false);
+    setLiveTranscript('');
+    realtimeTranscriptRef.current = '';
+    audioChunksRef.current = [];
+  };
+
   const startRecording = async () => {
     try {
+      setSessionState('recording');
       setError('');
       setTranscript('');
       setSummary('');
@@ -306,8 +322,10 @@ export default function App() {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      // Transfer live transcript to final before stopping
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setSessionState('processing');
       const finalRealtimeTranscript = realtimeTranscriptRef.current;
       if (finalRealtimeTranscript && finalRealtimeTranscript.length > 0) {
         setTranscript(finalRealtimeTranscript);
@@ -411,6 +429,7 @@ export default function App() {
 
       if (data.summary) {
         setSummary(data.summary);
+        setSessionState('results');
       } else {
         throw new Error('No summary in response');
       }
@@ -498,12 +517,12 @@ export default function App() {
       </div>
       
       <main className="pb-20">
-        {/* Intent Selector - Show when not recording */}
-        {!isRecording && !transcript && (
+        {/* Intent Selector - Always show in idle state */}
+        {sessionState === 'idle' && (
           <IntentSelector
             value={conversationIntent}
             onChange={setConversationIntent}
-            disabled={isRecording || isTranscribing}
+            disabled={false}
           />
         )}
         
@@ -674,7 +693,7 @@ export default function App() {
                   border: 1px solid rgba(255, 255, 255, 0.06);
                   background: rgba(255, 255, 255, 0.02);
                   animation: accordionSlideDown 280ms cubic-bezier(0.4, 0, 0.2, 1);
-                  overflow: hidden;
+                  overflow: visible;
                 }
 
                 @keyframes accordionSlideDown {
@@ -719,6 +738,85 @@ export default function App() {
                 }
               `}</style>
             </div>
+
+            {/* New Recording Button - Show in results state */}
+            {sessionState === 'results' && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={resetSession}
+                  className="new-recording-button"
+                  type="button"
+                >
+                  <svg
+                    className="new-recording-icon"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
+                  <span>New Recording</span>
+                </button>
+
+                <style jsx>{`
+                  .new-recording-button {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 14px 24px;
+                    background: transparent;
+                    border: 1px solid rgba(52, 201, 143, 0.3);
+                    border-radius: 12px;
+                    color: rgba(52, 201, 143, 0.9);
+                    font-size: 15px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                    letter-spacing: -0.01em;
+                  }
+
+                  .new-recording-button:hover {
+                    background: rgba(52, 201, 143, 0.08);
+                    border-color: rgba(52, 201, 143, 0.5);
+                    color: rgba(52, 201, 143, 1);
+                    transform: translateY(-1px);
+                  }
+
+                  .new-recording-button:active {
+                    transform: translateY(0);
+                  }
+
+                  .new-recording-icon {
+                    flex-shrink: 0;
+                    transition: transform 200ms ease;
+                  }
+
+                  .new-recording-button:hover .new-recording-icon {
+                    transform: rotate(-15deg);
+                  }
+
+                  @media (prefers-color-scheme: light) {
+                    .new-recording-button {
+                      border-color: rgba(30, 142, 94, 0.3);
+                      color: rgba(30, 142, 94, 0.9);
+                    }
+
+                    .new-recording-button:hover {
+                      background: rgba(30, 142, 94, 0.08);
+                      border-color: rgba(30, 142, 94, 0.5);
+                      color: rgba(30, 142, 94, 1);
+                    }
+                  }
+                `}</style>
+              </div>
+            )}
           </div>
         )}
       </main>
