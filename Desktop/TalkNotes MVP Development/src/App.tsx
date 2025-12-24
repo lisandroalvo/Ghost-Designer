@@ -6,6 +6,7 @@ import DocumentExport from './components/DocumentExport';
 import { IntentSelector } from './components/IntentSelector';
 import { LanguageAccordion } from './components/LanguageAccordion';
 import { projectId, publicAnonKey } from './utils/supabase/info';
+import { translationService } from './utils/translationService';
 
 type SessionState = 'idle' | 'recording' | 'processing' | 'results';
 type Tab = 'record' | 'transcript' | 'analysis' | 'export';
@@ -34,11 +35,14 @@ export default function App() {
   const websocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
+  const [liveTranslatedTranscript, setLiveTranslatedTranscript] = useState('');
+  const [originalTranscript, setOriginalTranscript] = useState('');
   const [useRealtime, setUseRealtime] = useState(
     // Only enable realtime on localhost
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   );
   const realtimeTranscriptRef = useRef<string>('');
+  const translatedTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     localStorage.setItem('talknotes-theme', isDarkMode ? 'dark' : 'light');
@@ -56,8 +60,12 @@ export default function App() {
     setTimeElapsed(0);
     setShowExport(false);
     setLiveTranscript('');
+    setLiveTranslatedTranscript('');
+    setOriginalTranscript('');
     realtimeTranscriptRef.current = '';
+    translatedTranscriptRef.current = '';
     audioChunksRef.current = [];
+    translationService.reset();
     setActiveTab('record');
   };
 
@@ -68,6 +76,8 @@ export default function App() {
       setTranscript('');
       setSummary('');
       setLiveTranscript('');
+      setLiveTranslatedTranscript('');
+      translationService.reset();
       
       if (!window.isSecureContext) {
         throw new Error('Microphone access requires a secure connection (HTTPS)');
@@ -250,7 +260,7 @@ export default function App() {
           }));
         };
 
-        ws.onmessage = (event) => {
+        ws.onmessage = async (event) => {
           try {
             const message = JSON.parse(event.data);
             
@@ -263,16 +273,56 @@ export default function App() {
               const currentText = message.text || '';
               setLiveTranscript(currentText);
               realtimeTranscriptRef.current = currentText;
+              
+              // Trigger live translation for partial (interim) results
+              if (targetLanguage && targetLanguage.toLowerCase() !== 'original') {
+                const translated = await translationService.translateDelta(
+                  currentText,
+                  targetLanguage,
+                  false
+                );
+                setLiveTranslatedTranscript(translated);
+                translatedTranscriptRef.current = translated;
+              } else {
+                setLiveTranslatedTranscript(currentText);
+              }
             } else if (message.type === 'transcript.delta') {
               // Delta updates append to the existing transcript
               const delta = message.text || '';
               const fullText = message.full || (realtimeTranscriptRef.current + delta);
               setLiveTranscript(fullText);
               realtimeTranscriptRef.current = fullText;
+              
+              // Trigger live translation for delta
+              if (targetLanguage && targetLanguage.toLowerCase() !== 'original') {
+                const translated = await translationService.translateDelta(
+                  fullText,
+                  targetLanguage,
+                  false
+                );
+                setLiveTranslatedTranscript(translated);
+                translatedTranscriptRef.current = translated;
+              } else {
+                setLiveTranslatedTranscript(fullText);
+              }
             } else if (message.type === 'transcript.final') {
               const finalText = message.text || realtimeTranscriptRef.current;
               realtimeTranscriptRef.current = finalText;
-              setTranscript(finalText);
+              setOriginalTranscript(finalText);
+              
+              // Final translation
+              if (targetLanguage && targetLanguage.toLowerCase() !== 'original') {
+                const translated = await translationService.translateDelta(
+                  finalText,
+                  targetLanguage,
+                  true
+                );
+                setTranscript(translated);
+                setLiveTranslatedTranscript('');
+              } else {
+                setTranscript(finalText);
+                setLiveTranslatedTranscript('');
+              }
               setLiveTranscript('');
             } else if (message.type === 'error') {
               console.error('[Realtime] Error:', message.message);
@@ -482,18 +532,30 @@ export default function App() {
               />
             </div>
 
-            {isRecording && liveTranscript && (
+            {isRecording && (liveTranscript || liveTranslatedTranscript) && (
               <div className="section">
                 <div className="w-full max-w-3xl mx-auto px-8">
-                  <div className="bg-[#111418] rounded-2xl border border-[#87F1C6]/20 p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-2 h-2 rounded-full bg-[#87F1C6] animate-pulse"></div>
-                      <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
-                        Live Transcript
-                      </h3>
+                  <div className="bg-[#111418] rounded-2xl border border-[#87F1C6]/20 p-6 max-h-[300px] overflow-y-auto">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[#87F1C6] animate-pulse"></div>
+                        <h3 className="text-[#87F1C6] text-sm tracking-[0.1em] uppercase font-medium">
+                          Live Transcript
+                          {targetLanguage && targetLanguage.toLowerCase() !== 'original' && ` (${targetLanguage})`}
+                        </h3>
+                      </div>
+                      {targetLanguage && targetLanguage.toLowerCase() !== 'original' && (
+                        <div className="px-2 py-1 rounded-md bg-[#87F1C6]/10 border border-[#87F1C6]/30">
+                          <span className="text-[#87F1C6] text-xs font-medium">
+                            {targetLanguage}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em]">
-                      {liveTranscript}
+                    <p className="text-[#F2F3F2] leading-[1.8] tracking-[0.02em] whitespace-pre-wrap">
+                      {targetLanguage && targetLanguage.toLowerCase() !== 'original' 
+                        ? liveTranslatedTranscript 
+                        : liveTranscript}
                     </p>
                   </div>
                 </div>
