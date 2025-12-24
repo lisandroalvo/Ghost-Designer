@@ -60,25 +60,31 @@ export class LiveSpeechRecognition {
   private isActive: boolean = false;
 
   constructor(private callbacks: SpeechRecognitionCallbacks) {
+    console.log('[SpeechRecognition] Initializing...');
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognitionAPI) {
+      console.error('[SpeechRecognition] Not supported in this browser');
       throw new Error('Speech recognition not supported in this browser');
     }
 
+    console.log('[SpeechRecognition] API found, creating instance');
     this.recognition = new SpeechRecognitionAPI();
     this.recognition.continuous = true;
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-US';
     this.recognition.maxAlternatives = 1;
 
+    console.log('[SpeechRecognition] Configuration set, setting up handlers');
     this.setupHandlers();
+    console.log('[SpeechRecognition] Ready');
   }
 
   private setupHandlers() {
     if (!this.recognition) return;
 
     this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+      console.log('[SpeechRecognition] Got result, processing...');
       let interimTranscript = '';
       let finalTranscript = '';
 
@@ -88,36 +94,50 @@ export class LiveSpeechRecognition {
 
         if (result.isFinal) {
           finalTranscript += transcript + ' ';
+          console.log('[SpeechRecognition] Final text:', transcript);
         } else {
           interimTranscript += transcript;
+          console.log('[SpeechRecognition] Interim text:', transcript);
         }
       }
 
       if (finalTranscript) {
         this.fullTranscript += finalTranscript;
+        console.log('[SpeechRecognition] Calling onFinal callback');
         this.callbacks.onFinal(this.fullTranscript.trim());
       }
 
       if (interimTranscript) {
         const combinedText = (this.fullTranscript + ' ' + interimTranscript).trim();
+        console.log('[SpeechRecognition] Calling onInterim callback with:', combinedText);
         this.callbacks.onInterim(combinedText);
       }
     };
 
     this.recognition.onerror = (event: any) => {
-      console.error('[SpeechRecognition] Error:', event.error);
+      console.error('[SpeechRecognition] Error event:', event.error, event);
       
       if (event.error === 'no-speech') {
-        // Ignore no-speech errors, they're normal during pauses
+        console.log('[SpeechRecognition] No speech detected (normal during pauses)');
         return;
+      }
+      
+      if (event.error === 'not-allowed') {
+        console.error('[SpeechRecognition] Microphone permission denied!');
       }
       
       this.callbacks.onError(event.error);
     };
 
+    this.recognition.onstart = () => {
+      console.log('[SpeechRecognition] Started successfully');
+    };
+
     this.recognition.onend = () => {
+      console.log('[SpeechRecognition] Ended, isActive:', this.isActive);
       // Auto-restart if still active
       if (this.isActive) {
+        console.log('[SpeechRecognition] Attempting to restart...');
         try {
           this.recognition?.start();
         } catch (err) {
@@ -128,7 +148,9 @@ export class LiveSpeechRecognition {
   }
 
   start() {
+    console.log('[SpeechRecognition] start() called');
     if (!this.recognition) {
+      console.error('[SpeechRecognition] Recognition not initialized');
       throw new Error('Speech recognition not initialized');
     }
 
@@ -136,7 +158,9 @@ export class LiveSpeechRecognition {
     this.isActive = true;
 
     try {
+      console.log('[SpeechRecognition] Calling recognition.start()...');
       this.recognition.start();
+      console.log('[SpeechRecognition] Start call completed');
     } catch (err) {
       console.error('[SpeechRecognition] Start error:', err);
       throw err;

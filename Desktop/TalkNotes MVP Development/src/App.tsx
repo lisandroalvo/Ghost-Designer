@@ -199,7 +199,12 @@ export default function App() {
   };
 
   const startBrowserSpeechRecognition = () => {
+    console.log('[App] startBrowserSpeechRecognition called');
+    console.log('[App] Browser speech supported:', LiveSpeechRecognition.isSupported());
+    console.log('[App] Target language:', targetLanguage);
+    
     try {
+      console.log('[App] Creating LiveSpeechRecognition instance...');
       const recognition = new LiveSpeechRecognition({
         onInterim: async (text) => {
           setLiveTranscript(text);
