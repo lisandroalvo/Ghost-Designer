@@ -7,6 +7,7 @@ import { IntentSelector } from './components/IntentSelector';
 import { LanguageAccordion } from './components/LanguageAccordion';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 import { translationService } from './utils/translationService';
+import { LiveSpeechRecognition } from './utils/speechRecognition';
 
 type SessionState = 'idle' | 'recording' | 'processing' | 'results';
 type Tab = 'record' | 'transcript' | 'analysis' | 'export';
@@ -34,6 +35,7 @@ export default function App() {
   const timerIntervalRef = useRef<number | null>(null);
   const websocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const speechRecognitionRef = useRef<LiveSpeechRecognition | null>(null);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [liveTranslatedTranscript, setLiveTranslatedTranscript] = useState('');
   const [originalTranscript, setOriginalTranscript] = useState('');
@@ -41,6 +43,7 @@ export default function App() {
     // Only enable realtime on localhost
     window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   );
+  const [useBrowserSpeech, setUseBrowserSpeech] = useState(false);
   const realtimeTranscriptRef = useRef<string>('');
   const translatedTranscriptRef = useRef<string>('');
 
@@ -155,14 +158,18 @@ export default function App() {
         setTimeElapsed(prev => prev + 1);
       }, 1000);
 
-      // Start realtime streaming if enabled
+      // Start realtime streaming if enabled (localhost only)
       if (useRealtime) {
         try {
           await startRealtimeStreaming(stream);
         } catch (realtimeErr) {
-          console.warn('Realtime streaming failed, falling back to standard mode:', realtimeErr);
+          console.warn('Realtime streaming failed, falling back to browser speech:', realtimeErr);
           setUseRealtime(false);
+          startBrowserSpeechRecognition();
         }
+      } else if (LiveSpeechRecognition.isSupported()) {
+        // Use browser-based speech recognition on production
+        startBrowserSpeechRecognition();
       }
 
     } catch (err) {
@@ -188,6 +195,59 @@ export default function App() {
       }
       
       setError(errorMessage);
+    }
+  };
+
+  const startBrowserSpeechRecognition = () => {
+    try {
+      const recognition = new LiveSpeechRecognition({
+        onInterim: async (text) => {
+          setLiveTranscript(text);
+          realtimeTranscriptRef.current = text;
+          
+          // Trigger live translation for interim results
+          if (targetLanguage && targetLanguage.toLowerCase() !== 'original') {
+            const translated = await translationService.translateDelta(
+              text,
+              targetLanguage,
+              false
+            );
+            setLiveTranslatedTranscript(translated);
+            translatedTranscriptRef.current = translated;
+          } else {
+            setLiveTranslatedTranscript(text);
+          }
+        },
+        onFinal: async (text) => {
+          const finalText = text;
+          realtimeTranscriptRef.current = finalText;
+          setOriginalTranscript(finalText);
+          
+          // Final translation
+          if (targetLanguage && targetLanguage.toLowerCase() !== 'original') {
+            const translated = await translationService.translateDelta(
+              finalText,
+              targetLanguage,
+              true
+            );
+            translatedTranscriptRef.current = translated;
+          }
+        },
+        onError: (error) => {
+          console.error('[BrowserSpeech] Error:', error);
+          if (error !== 'aborted') {
+            setError(`Speech recognition error: ${error}`);
+          }
+        }
+      });
+      
+      recognition.start();
+      speechRecognitionRef.current = recognition;
+      setUseBrowserSpeech(true);
+      console.log('[BrowserSpeech] Started browser-based speech recognition');
+    } catch (err) {
+      console.error('[BrowserSpeech] Failed to start:', err);
+      setUseBrowserSpeech(false);
     }
   };
 
@@ -375,6 +435,13 @@ export default function App() {
   };
 
   const stopRecording = () => {
+    // Stop browser speech recognition if active
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      speechRecognitionRef.current = null;
+      setUseBrowserSpeech(false);
+    }
+    
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
