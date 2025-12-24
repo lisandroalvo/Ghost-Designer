@@ -240,9 +240,22 @@ export default function App() {
         },
         onError: (error) => {
           console.error('[BrowserSpeech] Error:', error);
-          if (error !== 'aborted') {
-            setError(`Speech recognition error: ${error}`);
+          // Clean up speech recognition but continue recording audio
+          if (speechRecognitionRef.current) {
+            speechRecognitionRef.current.abort();
+            speechRecognitionRef.current = null;
           }
+          setUseBrowserSpeech(false);
+          // Show warning but allow recording to continue
+          console.warn('[App] Live transcription unavailable, continuing with audio recording only');
+          // Don't show error to user if it's a network issue - recording still works
+          if (error.includes('Network error')) {
+            // Silently continue - audio recording works fine
+            return;
+          }
+          // For other errors, show a brief notification
+          setError(error);
+          setTimeout(() => setError(''), 5000);
         }
       });
       

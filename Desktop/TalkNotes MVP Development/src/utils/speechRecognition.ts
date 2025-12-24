@@ -58,6 +58,7 @@ export class LiveSpeechRecognition {
   private recognition: ISpeechRecognition | null = null;
   private fullTranscript: string = '';
   private isActive: boolean = false;
+  private hasEncounteredFatalError: boolean = false;
 
   constructor(private callbacks: SpeechRecognitionCallbacks) {
     console.log('[SpeechRecognition] Initializing...');
@@ -124,9 +125,24 @@ export class LiveSpeechRecognition {
       
       if (event.error === 'not-allowed') {
         console.error('[SpeechRecognition] Microphone permission denied!');
+        this.callbacks.onError('Microphone permission denied. Please allow microphone access and try again.');
+        return;
       }
       
-      this.callbacks.onError(event.error);
+      if (event.error === 'network') {
+        console.error('[SpeechRecognition] Network error - cannot reach speech recognition service');
+        this.hasEncounteredFatalError = true;
+        this.isActive = false;
+        this.callbacks.onError('Network error: Unable to connect to speech recognition service. Recording will continue without live transcription.');
+        return;
+      }
+      
+      if (event.error === 'aborted') {
+        console.log('[SpeechRecognition] Recognition aborted (normal on stop)');
+        return;
+      }
+      
+      this.callbacks.onError(`Speech recognition error: ${event.error}`);
     };
 
     this.recognition.onstart = () => {
@@ -134,15 +150,17 @@ export class LiveSpeechRecognition {
     };
 
     this.recognition.onend = () => {
-      console.log('[SpeechRecognition] Ended, isActive:', this.isActive);
-      // Auto-restart if still active
-      if (this.isActive) {
+      console.log('[SpeechRecognition] Ended, isActive:', this.isActive, 'hasFatalError:', this.hasEncounteredFatalError);
+      // Auto-restart if still active and no fatal errors
+      if (this.isActive && !this.hasEncounteredFatalError) {
         console.log('[SpeechRecognition] Attempting to restart...');
         try {
           this.recognition?.start();
         } catch (err) {
           console.error('[SpeechRecognition] Failed to restart:', err);
         }
+      } else if (this.hasEncounteredFatalError) {
+        console.log('[SpeechRecognition] Not restarting due to fatal error');
       }
     };
   }
