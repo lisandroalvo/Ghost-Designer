@@ -85,3 +85,4 @@ A complete multi-tenant SaaS platform for academies, gyms, and training studios 
 ## 📄 License
 
 MIT
+# Trigger deploy
