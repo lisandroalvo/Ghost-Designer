@@ -1,0 +1,166 @@
+/* ============================================
+   LIQUID GLASS STYLES
+   ============================================ */
+
+/* Glass Distortion Button */
+.glass-dist {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+  border: none;
+  margin: 0;
+  text-decoration: none;
+  padding: 0;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-radius: 16px !important;
+  position: relative;
+  z-index: 2;
+}
+
+.glass-dist::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0),
+    inset 1.5px 1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset -1.5px -1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset 1px 2px 1px -2px rgba(255, 255, 255, 1),
+    inset -1px -2px 1px -2px rgba(255, 255, 255, 1),
+    inset 1px 1.5px 2px -2px rgba(255, 255, 255, 1),
+    inset -1px -1.5px 2px -2px rgba(255, 255, 255, 1),
+    0px 2px 8px 0px rgba(0, 0, 0, 1);
+  pointer-events: none;
+}
+
+.glass-dist::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  backdrop-filter: blur(12px) !important;
+  filter: url(#glass-distortion) !important;
+}
+
+/* Glass Distortion Card - transparent background variant */
+.glass-card {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+  border: none;
+  margin: 0;
+  text-decoration: none;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-radius: 24px !important;
+  position: relative;
+  z-index: 2;
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0),
+    inset 1.5px 1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset -1.5px -1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset 1px 2px 1px -2px rgba(255, 255, 255, 1),
+    inset -1px -2px 1px -2px rgba(255, 255, 255, 1),
+    inset 1px 1.5px 2px -2px rgba(255, 255, 255, 1),
+    inset -1px -1.5px 2px -2px rgba(255, 255, 255, 1),
+    0px 2px 8px 0px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  backdrop-filter: blur(12px) !important;
+  filter: url(#glass-distortion) !important;
+}
+
+/* Glass Distortion Card - with white tint background */
+.glass-card-tinted {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+  border: none;
+  margin: 0;
+  text-decoration: none;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-radius: 24px !important;
+  position: relative;
+  z-index: 2;
+}
+
+.glass-card-tinted::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0),
+    inset 1.5px 1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset -1.5px -1.4px 2px -2px rgba(255, 255, 255, 1),
+    inset 1px 2px 1px -2px rgba(255, 255, 255, 1),
+    inset -1px -2px 1px -2px rgba(255, 255, 255, 1),
+    inset 1px 1.5px 2px -2px rgba(255, 255, 255, 1),
+    inset -1px -1.5px 2px -2px rgba(255, 255, 255, 1),
+    0px 2px 8px 0px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.glass-card-tinted::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  backdrop-filter: blur(12px) !important;
+  filter: url(#glass-distortion) !important;
+}
+
+/* Content inside glass elements needs relative z-index */
+.glass-dist > *,
+.glass-card > *,
+.glass-card-tinted > * {
+  position: relative;
+  z-index: 10;
+}
+
+/* Hover effects */
+.glass-dist:hover,
+.glass-card:hover,
+.glass-card-tinted:hover {
+  transform: translateY(-2px);
+}
+
+.glass-dist:active,
+.glass-card:active,
+.glass-card-tinted:active {
+  transform: translateY(0);
+}

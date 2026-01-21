@@ -1,0 +1,8 @@
+{
+  "name": "White-Saas AI powered App",
+  "description": "A comprehensive management and branding suite for AcademyOS, allowing SMEs to configure their AI-powered white-label mobile applications.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
